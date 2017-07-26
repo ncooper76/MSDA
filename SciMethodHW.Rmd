@@ -1,0 +1,35 @@
+---
+title: "SciMethodHW"
+author: "Nathan Cooper"
+date: "July 26, 2017"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+# Loading the data into R
+These data are available at <https://github.com/ncooper76/MSDA/blob/master/GradeComparison2.csv>
+Be sure to change the Directory to your local directory with the code below
+
+```{r}
+grades <- read.csv("C:/Users/Nate/Documents/DataSet/GradeComparison2.csv")
+```
+#Attaching data
+You can use the attach command so you can use colName instead of data$colName syntax. You need to detach before you
+use another data set
+```{r}
+attach(grades)
+names(grades)
+```
+#Getting rid of NA's
+Since one teacher teaches more students than the other on colunm has NA's use this code to git rid of them.
+```{r}
+A_count =A_count[!is.na(A_count)]
+A_count
+```
+#Analyzing the data
+Student's t-test will tell you if two samples are drawn from different populations. It assumes that both samples have the same varience and are normally distributed. Conventionally 95% is set as the cutoff for statistical significance, so p has to be <0.05.
+```{r}
+var.test(N_count,A_count)
+t.test(N_count, A_count, var.equal=TRUE)
+```
