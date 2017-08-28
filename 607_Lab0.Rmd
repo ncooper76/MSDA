@@ -1,0 +1,56 @@
+---
+title: "607_lab0"
+author: "Nathan Cooper"
+date: "August 28, 2017"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+I first loaded the data into r using read_csv
+```{r}
+bridges <- read.csv('https://archive.ics.uci.edu/ml/machine-learning-databases/bridges/bridges.data.version1')
+```
+
+I then created a data frame:
+```{r}
+bridges_df <- data.frame(bridges)
+```
+
+I used the view command to see what the data looked like in the two different formats:
+
+```{r}
+View(bridges)
+```
+
+```{r}
+View(bridges_df)
+```
+
+Next I renamed the rows of the Data Frame to be more discriptive. This was based on the website: https://archive.ics.uci.edu/ml/datasets/Pittsburgh+Bridges
+
+N.B., that some of the data lacks context. Identifier is not explained in any detail. Nor is location, prehaps these makes sense in how the city records are kept. No measurement units are given for length, they could be feet or yards.
+As for River, A = Allegheny, M = Monongahela, O = Ohio
+
+```{r}
+bridges_df <- setNames(bridges_df, c("ID", "River", "Location", "Year_Erected", "Purpose", "Length", "Lanes", "Clear", "T_or_D", "Material", "Span", "Rel-L", "Type"))
+```
+I was interest in how many bridges had more than 2 lanes
+
+```{r}
+multi_lane_df <- subset(bridges_df, as.numeric(Lanes) > 3, select= c("Lanes", "Year_Erected", "Purpose", "Material"))
+multi_lane_df
+```
+
+Suumarize the multilane subset:
+```{r}
+summary(multi_lane_df)
+```
+
+From this summary we can see that there are 23 four lane bridges and 4 six lane bridges. The earliest built was in 1876 which was the only wooden bridge in the group. The only railroad bridge in the subset was built in 1904, the rest are highway bridges.
+
+Here is a barplot for the year each multilane bridge was built. 
+
+```{r}
+barplot(table(multi_lane_df$Year_Erected), main = "Multilane Brigdes by Year Erected")
+```
