@@ -1,0 +1,50 @@
+---
+title: "R_MySQL_MovieDB"
+author: "Nathan Cooper"
+date: "September 9, 2017"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+I'll use the RMySQL pacakge to connect to MySQL, first we need to install the package and load it.
+
+```{r RMySQL-Load, eval= TRUE}
+#install.packages("RMySQL")
+library(RMySQL)
+```
+Now to make the connection. With some tests to make sure the connection works.
+
+```{r db-connect, eval=TRUE}
+movie_db = dbConnect(MySQL(), user='*******', password='************', dbname='movies', host='localhost')
+
+dbListTables(movie_db)
+dbListFields(movie_db, 'movies')
+```
+
+I sourced my data on Facebook using the movies, Star War: The Force Awakens, Star Wars: Rogue One, Deadpool, Trolls, Fantastic Beasts and where to Find Them, and Kubo of the Two Strings. My friends are a mix of geeks and/or parents of young kids so I included movies likely to get a response. I recieved more then required by the assignment within minutes.
+
+now to Read the database into the dataframe:
+
+```{r movie_df,  eval=TRUE}
+movie_df <- dbReadTable(movie_db, name = "movies")
+movie_df <- data.frame(movie_df)
+movie_df
+```
+
+While we are at it let's take a look at the data, keeping in mind that 0 means they did not see the film. Since I did have friends that insisted in half scores, histograms work a little better than bar plots in R even though the data is still discrete.
+
+```{r movie-barplots}
+hist(movie_df$SW_TFA)
+hist(movie_df$SW_R1)
+hist(movie_df$Dpool)
+hist(movie_df$Trolls)
+hist(movie_df$FanBeast)
+hist(movie_df$Kubo)
+```
+
+It looks like Deadpool was the most liked movie with Kubo coming in a close second, Trolls was the least liked an Fantastic Beasts had the most spread in opinion.
