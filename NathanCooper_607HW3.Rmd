@@ -1,0 +1,127 @@
+---
+title: "DATA 607 HW3"
+author: "Nathan Cooper"
+date: "September 13, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Chapter 8 Problem 3
+
+```{r load-stringr, eval = TRUE}
+library("stringr")
+# Load the raw data while we are at it.
+raw.data <-"555-1239Moe Szyslak(636) 555-0113Burns, C. Montgomery555-6542Rev. Timothy Lovejoy555 8904Ned Flanders636-555-3226Simpson, Homer5553642Dr. Julius Hibbert"
+raw.data
+```
+
+Copy the introductory example. The vector name stores the extracted names. 
+
+```{r text-example, eval=TRUE}
+names <- unlist(str_extract_all(raw.data, "[[:alpha:]., ]{2,}"))
+names
+```
+ 
+#### 1. Use the tools of this chapter to rearrange the vector so that all the elements conform to the standard first_name last_name.
+
+The first regex I use ",.+$" identifies a string of one or more characters between a comma and the end of the string. This is to pull Monte Burns and Homer Simpson. Next is to extract a string of one or more characters between a period and a space, "\\..+ ", this is for Rev. Lovejoy and Dr. Hibbert. Finally for Moe and Ned, the regex extracts exactly 3 characters between the start of the string and a space with no period, "^.[^\\.]{2} ".
+
+For the last names there were two patterns, the last name ended in a comma in the case of Homer and Monte, ".+," or the last name was 7 or 8 characters between a space and the end of the string for everyone else, "[[:blank:]].{7,8}".
+
+I used for loops to take out unwanted spaces and punctuation marks.
+
+```{r name_sep, eval=TRUE}
+first_name <- str_extract_all(names, ",.+$|\\..+ |^.[^\\.]{2} ")
+# Clean up the data a little by getting rid of punctuation and leading spaces
+for(i in 1:length(first_name)){
+  first_name[i] = gsub(", ", "", first_name[i])
+  first_name[i] = gsub("\\. ", "", first_name[i])
+  first_name[i] = gsub(" ", "", first_name[i])
+# Instead of dropping the C. from Monte's name. I opted to keep it in, as I have a friend that does this on his social media and uses it as his pen name.
+  first_name[i] = gsub("CM", "C. M", first_name[i])
+}
+
+last_name <- str_extract_all(names, ".+,|[ [:blank:]].{7,8}$")
+for(i in 1:length(last_name)){
+  last_name[i] = gsub(",", "", last_name[i])
+}
+
+names_df <-data.frame(name = paste(first_name,last_name))
+names_df
+``` 
+
+
+#### (2) Create a logical vector to indicate if the character has a title.
+
+The titles are either 2 or 3 letters long and are listed first, so I used srt_detect to start at the start of the string and look for three or 2 characters between a period, "^.{3}\\.".|^.{2}\\.".
+
+```{r title-finder, eval=TRUE}
+title <- str_detect(names, "^.{3}\\.|^.{2}\\.")
+names_df <- cbind(names_df, title = title)
+names_df
+```
+
+#### (3) Create a logical vector indicacting whether a character has a second name.
+
+What makes Monte Burns different is his name is the only one with a comma and a period, so I used str_detect to look for strings with at least one character between a comma and period ",.+\\.".
+
+
+```{r second-finder, eval=TRUE}
+second <- str_detect(names, ",.+\\.")
+names_df <- cbind(names_df, scnd_nm = second)
+names_df
+```
+
+### Chapter 8 Problem 4
+
+```{r test-list, eval=TRUE}
+test_list <- as.character(c("5$" , "$5", "five$", "7,134,689$","at", "dab", "dAb" , "DaB" ,"band", "banana", "homework", 'homework.doc', "homework.txt", "txt", ".txt" , "7/4/76", "07/04/76", "07/04/1776", "07-04-1776", "<link>rpubs.com</link>", "<bold>Got It!</link>"))
+test_list
+```
+#### Describe the types of strings that conform to the following regular expressions and construct an example that is matched by the regular expression.
+
+1. [0-9]+\\$ one or more digits 0 to 9 followed by a dollar sign.
+
+```{r digit-dollar, eval=TRUE}
+dollar <- str_detect(test_list, "[0-9]+\\$")
+dollar <- cbind(test_list,dollar)
+dollar
+```
+
+2. \\b[a-z]{1,4}\\b detects if a string contains 1 to 4 lower case letters bordered by a non-word character.
+
+```{r words, eval=TRUE}
+words <- str_detect(test_list, "\\b[a-z]{1,4}\\b")
+words <- cbind(test_list,words)
+words
+```
+
+3. .*?\\.txt$ checks the end of a string for a .txt that may or may not have characters before the ".".
+
+```{r txt, eval=TRUE}
+txt <- str_detect(test_list, ".*?\\.txt?")
+txt <- cbind(test_list,txt)
+txt
+```
+
+
+4. \\d{2}/\\d{2}\//d{4} detects exactly 2 digits then a \ then exactly two digits then a \ then exactly 4 digits. This checks for a formatted dd\\mm\\yyyy or mm\\dd\\yyyy date depending if you are in the US or not.
+
+```{r dates, eval=TRUE}
+dates <- str_detect(test_list, "\\d{2}/\\d{2}/\\d{4}")
+dates <- cbind(test_list,dates)
+dates
+```
+
+5. <(.+?)>.+?</\\1> this checks for html tags by capturing a string between < > that may or may not have a string between and matching it to a </ > with the same captured string in the braket.
+
+```{r brakets, eval=TRUE}
+html <- str_detect(test_list, "<(.+?)>.+?</\\1>")
+html <- cbind(test_list,html)
+html
+```
+
+### Chapter 8 Problem 9
