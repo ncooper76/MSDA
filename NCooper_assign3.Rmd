@@ -1,0 +1,195 @@
+---
+title: "605 HW 3"
+author: "Nathan Cooper"
+date: "September 12, 2017"
+output:
+  html_document: default
+  code_folding: hide
+  toc: yes
+  toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Problem Set 1
+
+```{r pracma, eval=TRUE}
+library("pracma")
+```
+
+(1) What is the rank of the matrix A?
+
+```{r matrix-A, eval=TRUE}
+
+A <- matrix(c(1,-1,0,5,2,0,1,4,3,1,-2,-2,4,3,1,-3), nrow = 4,ncol = 4)
+A
+```
+
+The rank of A will be equal to the number of non-zero rows in reduced row echalo form.
+
+```{r rref-A, eval=TRUE}
+rref(A)
+```
+
+Since the result of putting A into reduced row echalon form is the Identity Matrix, A is rank 4. 
+
+(2) (i)Given an $mxn$ matrix where $m>n$, what can be the maximum rank?
+
+Since rank is the number of non-zero rows in row echelon form, the maximum rank in these circumstances is $n$, as you need a leading entry of 1 in each column in row echelon form, and $n$ is the number of colunms. 
+
+```{r rank-exm-1, eval=TRUE}
+B <- matrix(c(2,4,6,3,6,7,5,7,5,1,2,3), nrow = 4, ncol = 3, byrow = TRUE)
+B
+rref(B)
+```
+
+(ii) The minimum rank, assuming that the matrix is non-zero.
+
+The minimum rank in these circumstances is 1. In the trival case there is only 1 non-zero row. It could also be that all the rows differ by a multiplicative factor.
+
+```{r rank-exm-2, eval=TRUE}
+C <- matrix(c(2,4,6,4,8,12,6,12,18,1,2,3), nrow = 4, ncol = 3, byrow = TRUE)
+C
+rref(C)
+```
+
+(3) What is the rank of matrix B?
+
+It seems similar to my example C above, all of the row differ only by a multiplying ,so it should be 1.
+
+```{r B-rank, eval = TRUE}
+B <- matrix(c(1,3,2,2,6,4,1,3,2), nrow = 3,ncol = 3)
+B
+rref(B)
+```
+
+Which it is.
+
+### Problem Set 2
+
+Compute the Eigenvalues and Eigenvectors of matrix A. You'll need to show your work. You'll need to wrtie the characteristic polynomial and show your solution.
+
+The fact that this is an upper triangular matrix makes solving the determinant simple. It is the product of the diagonal terms.
+
+
+$$det(A) = 24$$
+To varify using r:
+
+```{r det-A, eval=TRUE}
+A <- matrix(c(1,0,0,2,4,0,3,5,6), nrow = 3, ncol = 3)
+A
+det(A)
+```
+
+This means that the characteristic polynomial is
+
+$$(1-\lambda)(4-\lambda)(6-\lambda) = 0$$
+Calculated from:
+
+$$det(A-I\lambda)$$
+
+$$
+\begin{vmatrix}
+(1-\lambda) && 2 && 3 \\
+0 &&(4-\lambda) &&  5 \\
+0 && 0 && (6-\lambda)
+\end{vmatrix}
+$$
+
+The roots are simply $1,4,6$
+
+As for the Eigenvectors we have to solve systems of equations such that:
+
+$$
+AX_{n} = \lambda_{n}X_{n} \\
+Ax_{n} - \lambda_{n}X_{n} = 0 \\
+(A - \lambda_{n}I)X_{n} = 0
+$$
+
+We can treat this as a system of equations and find the reduced row echalon form.
+
+For $\lambda_{1} = 1$:
+
+```{r rref-A1, eval = TRUE}
+A1 <- matrix(c(0,0,0,2,3,0,3,5,5), nrow =3, ncol = 3)
+A1
+rref(A1)
+```
+
+Looking at the rref(A1), $x_{3} = x_{2} = 0$ and $x_{1}$ is free and $X_{1}$ for $\lambda_{1}$ is:
+
+$$
+X_{1}=
+\begin{bmatrix}
+1 \\
+0\\
+0
+\end{bmatrix}
+$$
+
+For $\lambda_{2} = 4$:
+
+```{r rref-A2, eval = TRUE}
+A2 <- matrix(c(-3,0,0,2,0,0,3,5,2), nrow =3, ncol = 3)
+A2
+rref(A2)
+```
+
+Looking at the rref(A2), $x_{3} = 0$ and $x_{2}$ is free and $x_{1} - \frac{2}{3}x_{2} = 0$ $X_{2}$ for $\lambda_{2}$ is:
+
+$$
+X_{2}=
+\begin{bmatrix}
+ 1\\
+\frac{3}{2}\\
+0
+\end{bmatrix}
+$$
+
+For $\lambda_{3} = 6$:
+
+```{r rref-A3, eval = TRUE}
+A3 <- matrix(c(-5,0,0,2,-2,0,3,5,0), nrow =3, ncol = 3)
+A3
+rref(A3)
+```
+
+Looking at the rref(A3), and $x_{3}$ is free and $x_{1} - \frac{8}{5}x_{3} = 0$  and $x_{2} - \frac{5}{2}x_{3} = 0$ , so $X_{3}$ for $\lambda_{3}$ is:
+
+$$
+X_{3} = 
+\begin{bmatrix}
+\frac{8}{5} \\
+\frac{5}{2} \\
+1
+\end{bmatrix}
+$$
+
+We can check our work using r's eigen function. 
+
+```{r eigen-check, eval=TRUE}
+eigen(A)
+0.5108407/0.3192754
+0.7981886/0.3192754
+0.8320503/0.5547002
+```
+
+Instead of declaring the free parameters 1 like I did r used different numbers but the proportions are correct. I included the arithmatic to show that.
+
+Let matrix R be composed of the eigenvectors:
+
+```{r R, eval=TRUE}
+R <- matrix(c(1,0,0,1,1.5,0,1.6,2.5,1), nrow = 3, ncol = 3)
+R
+```
+
+If I did the eigenvectors correctly $R^{-1}AR$ should return a diagonal matrix with the eigenvalues as the non-zero elements.
+
+```{r diagonalize, eval=TRUE}
+A <- solve(R)%*%A%*%R
+A
+```
+
+There seems to be some rounding errors or r's part but it is otherwise correct as $10^{-16}$ are very very small numbers.
