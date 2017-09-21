@@ -1,0 +1,125 @@
+---
+title: "DATA 607 Project 1"
+author: "Nathan Cooper"
+date: "September 17, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Pre-treatment of the data.
+
+First we must load the data from a .txt file. The hyphen in Stanescu-Bellu's name was trouble so I replaced it with an underscore in the command line (Windows 10 PowerShell):
+
+>get-content .\\tournamentinfo1.txt |%{$_ -replace "\b-\b", "_"}|Set-Content .\\tournamentinfo2.txt
+
+I'm more familiar with sed() in Linux, so I had install PowerShell and get the syntax from https://stackoverflow.com/questions/15295958/get-content-multiple-replacements
+
+The regular expressions means to look for a hyphen between word boundaries and replace it with an underscore. This can be fixed back at a latter time with the same command, albeit with the underscore and hyphen switched. The file name has a 1 added. I copied the data with a different name in case the replace function did not behave as expected, I could re-copy the original. Since this worked, I'll use tournamentinfo2.txt from here on out.
+
+## Reading in the .txt file
+
+You can change the separator of the read.csv function and trial-and-error indicated that the hyphens used to separate rows was the best character to use. This lead to me changing the hyphenated name above, since it was putting that person's data into a different column.
+
+```{r data_load, eval=TRUE}
+library(readtext)
+chess_data_raw <- read.csv("C:\\Users\\Nate\\Documents\\DataSet\\tournamentinfo2.txt", sep = "-")
+#chess_data_raw
+chess_data <- data.frame(chess_data_raw$X,chess_data_raw$X.1)
+chess_data
+```
+
+## Reorganizing the data.
+
+Now to use stringr to pull the desired data from the data frame, and put it into a better organized data frame. Using str_extract() will produce a lot of NA's. In this application these just mean an entry did not match our regular expression. I use !is.na() to remove these data. Also note that the regular expression that captures the name also captures it's row header. I reorganize that list to omit the unwanted data. The regular expressions (regex) used are explained in the code comments
+
+I adapted removing NA's from the lists from: https://stackoverflow.com/questions/8184483/how-to-remove-all-the-na-from-a-vector
+
+```{r stringr, eval=TRUE}
+library(stringr)
+#Names are upper case letters seperated by spaces that go into another upper case letter with a possible underscore.
+chess_names <- str_extract(chess_data$chess_data_raw.X, "[[:upper:][:blank:]]{4,}[[:upper:]][_[:upper:]]+")
+chess_names <- chess_names[!is.na(chess_names)]
+chess_names <- chess_names[2:65]
+#States were all either Michigan, Ontario and 1 from Ohio. I felt comfortable being more specific with these strings since I did not want to accidently match part of a name. The string is sourounded by whitespace which is alo reflected in the regex. 
+states <- str_extract(chess_data$chess_data_raw.X, " [MI]{2} | [ONH]{2} ")
+states <- states[!is.na(states)]
+#Points were decimal numbers so we look for digits with a period in between.
+chess_points <- str_extract(chess_data$chess_data_raw.X, "([0-9]{1}\\.{1}[0-9]{1})")
+chess_points <- chess_points[!is.na(chess_points)]
+#Pre touney ELOs are preceded by a ":" and white space followed by digits.
+pre_rating <- str_extract(chess_data$chess_data_raw.X, ": +[0-9]+")
+pre_rating <- pre_rating[!is.na(pre_rating)]
+#We can now put together the data frame with column titles
+chess_df <- data.frame("Names" = chess_names, "State" = states, "Points" = chess_points, "Pre-ELO" = pre_rating)
+#Clean up the data by dropping the colons picked up in the str_extract
+chess_df[,4] <- str_replace(chess_df[,4], pattern = ": ", replacement = "")
+#Since the hyphen is no longer a problem, we can replace the underscore
+chess_df[,1] <- str_replace(chess_df[,1], pattern = "_", replacement = "-")
+# We also need to clean the data by converting from factors to appropraite data type, numeric for Score and Integer for ELO
+chess_df[,3] <- as.numeric(as.character(chess_df[,3]))
+chess_df[,4] <- as.integer(chess_df[,4])
+chess_df
+```
+
+
+### Initial Visualizations 
+
+Just out of curiosity I want to know the distribution of the score and the ELO ratings.
+
+```{r hist, eval=TRUE}
+hist(chess_df[,3], xlab = "Score", main= "Histogram of Score")
+hist(chess_df[,4], xlab= "ELO Rating", main = "Histogram of ELO Rating")
+```
+
+## Calculating the Average Opponent Score
+
+We see the ELO ratings are left skewed with an outlier $< 500$ which might explain the slight asymmetry to the left in the score. The top two bins in ELO may have been dominating the bottom 4 bins.
+
+Now We will calculate the average opponent ELO score. This requires more treatment than the other categories so I opted to put it in it's own section.
+
+```{r op-rate, eval=TRUE}
+#First I extract all the 1 or 2 digit numbers ending with a "|"
+op_id <- str_extract_all(chess_data$chess_data_raw.X, "\\d{1,2}[\\|]")
+#Next I get rid of all the empty lists, I adapted this line of code from: https://stackoverflow.com/questions/19023446/remove-empty-elements-from-list-with-character0
+op_id <- op_id[lapply(op_id, length)>0]
+#Next I get rid of the pipes one line had only one element so I had to make an or statement for that case. Also when I saved op_id as an integer data frame it was set to chacater type instead of factor, which made the following code easier.
+op_id <- as.data.frame.integer(gsub("\"(\\d{1,2})\\|\"|(\\d{1,2})[\\|]", "\\1 \\2" ,op_id))
+#I am going to use embedded for loops to parse through a list of lists. Once I have the oponent ID, I'll reference chess_df to get thier ELO and add them up and divide by total number of oppenents. 
+op_ave <- integer(0) #Initialized here for scope.
+for(i in 1:length(op_id[,1])){
+  numbers <- as.vector(str_extract_all(op_id[i,1], "\\d{1,2}")) #Removes spaces in the strings.
+  for(n in numbers){
+    tot = 0 #total opponent score
+    for(j in n){
+      #This gets the ELO from the op_id and totals them
+      tot = tot + chess_df[as.integer(j),4]
+    }
+    #This gets the average from number of opponents, and stores it in a vector.
+    ave = as.integer(tot/length(n))
+    op_ave[i] <- ave
+  }
+}
+#Now I update my chess_df
+chess_df$Op_Ave <- op_ave
+chess_df
+```
+I'm curious how fair they made it so I want to look at the ratio of Player ELO to Opponent Average ELO.
+
+```{r viz2, eval=TRUE}
+
+ELO_ratio <- chess_df$Pre.ELO/chess_df$Op_Ave
+hist(ELO_ratio, xlab = "ELO/(Ave Oponent ELO")
+plot(chess_df$Points, ELO_ratio)
+fit <- lm(ELO_ratio ~ chess_df$Points)
+summary(fit)
+```
+The distribution is centered on 1, which seems pretty fair.
+The linear model does seem to show a significant relationship between Player ELO and Average Opponent ELO. If Player ELO is greater than average opponent ELO, you would expect a higher win percentage. Relative ELO does correspond to win percentage. The ELO system seems to work pretty well and it seems that organizers did a fairly good job matching players.
+
+Finally to make the .csv
+
+```{r csv, eval=TRUE}
+write.csv(chess_df, "tournamentinfo.csv")
+```
