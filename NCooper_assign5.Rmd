@@ -1,0 +1,115 @@
+---
+title: "605 HW5"
+author: "Nathan Cooper"
+date: "September 27, 2017"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Assignment 5
+Choose independently two numbers B and C at random from the interval [0, 1] with
+uniform density. Prove that B and C are proper probability distributions.  
+
+This is somewhat like throwing two six-sided dice. For two six sided dice, each dice will be discretely range from 1 to 6 and the combination of the two dice will range discretely from 2 to 12. What makes the two six sided dice proper probabilty distributions is the each die has a 100% chance of rolling $[1,2,3,4,5,6]$ and the pair of dice has a 100% chance of falling in the range of $[2,3,4,5,6,7,8,9,10,11,12]$
+
+What makes B and C a proper probabilty distrubution is that both B and C have a 100% chance of falling in between $[0,1]$ albeit continuously instead of discretely, and B+C combined have a 100% chance of falling between $[0,2]$
+
+To demonstrate, I have used r to make 100,000 such pairs:
+
+```{r b-c, eval=TRUE}
+
+B <- runif(100000)
+head(B)
+tail(B)
+C <- runif(100000)
+head(C)
+tail(C)
+head(B+C)
+tail(B+C)
+```
+Note that the point (B,C) is then chosen at random in the unit square.
+Find the probability that
+
+### (a) $B + C < 1/2$
+
+```{r a, eval=TRUE}
+j = 0
+for(i in 1:length(B)){
+  if(B[i]+C[i] < 0.5){
+    j = j+1
+  }
+}
+print(paste("The Probabilty B+C < 1/2 =", j/length(B)))
+````
+
+The probabilty is 12.5%. For this to be true B and C must be $< \frac{1}{2}$, which is $0.5*0.5 = 0.25$ and C or B must be $< \frac{1}{2} - [Compliment]$ the range where is can be true is $[0,0.5]$. The overall probabilty is $0.25*0.5 = 0.125$ which is what we see in the simulation. 
+
+### (b) $BC < 1/2$
+
+```{r b, eval=TRUE}
+j = 0
+for(i in 1:length(B)){
+  if(B[i]*C[i] < 0.5){
+    j = j+1
+  }
+}
+print(paste("The Probabilty BC < 1/2 =", j/length(B)))
+````
+
+The probabilty is about 85%. In this, there is a 50% that both B and C are $< \frac{1}{\sqrt{2}} = 0.7071$, this means the odds of both being $> \frac{1}{\sqrt{2}} = 0.7071$, which is the condition for $BC>\frac{1}{2}$, is $(1 - \frac{1}{\sqrt{2}})/2 = 0.1464466$. The overall probabilty is $1 - 0.1464466 =0.8535534 $, which is what we see in the simulation. 
+
+### (c) $|B-C| < 1/2$
+
+```{r c, eval=TRUE}
+j = 0
+for(i in 1:length(B)){
+  if(abs(B[i]-C[i]) < 0.5){
+    j = j+1
+  }
+}
+print(paste("The Probabilty |B-C| < 1/2 =", j/length(B)))
+````
+The closer one number get to another, the closer the closer their difference appoaches zero. So in the case where $B(<1/2)$ and $C(<1/2)$, or $B(>1/2)$ and $C(>1/2)$ are going to have a diffence that is $<1/2$. This accounts for 50% of all cases. The table below for (d) and (e) may help illustrate this. The remaining 25% comes from cases where either B or C is $>1/2$ and C or B is $<1/2$. For $|B-C| < 1/2$ , then B or C must be $(.75,0.5)$, and C or B $(0.5,0.25)$. This accounts for $1/2$ of the cases where one random variable is $<1/2$ and the other is $<1/2$. This means the probabilty for the remaining cases is $1/2*1/2 = 1/4 = 0.25$. Such that $0.5+0.25 =0.75$ , which is supported by the simulation. 
+
+### (d) $max\{B,C\} < 1/2$
+
+Both (d) and (e) can best be discribed by the following table:
+
+ B or C | C<1/2 | C\> 1/2 
+ -------|-------|--------
+ B < 1/2| B(<1/2)\&C(<1/2) |B(<1/2)\&C(\>1/2)   
+ B\> 1/2| B(\>1/2)\&C(<1/2) | B(\>1/2)\&C(\>1/2)   
+
+There is only 25% chance that the max of either B or C is $< \frac{1}{2}$. However there is a 75% chance that the minimum of either B or C is $< \frac{1}{2}$.
+
+```{r d, eval=TRUE}
+j = 0
+for(i in 1:length(B)){
+  if(max(c(B[i],C[i])) < 0.5){
+    j = j+1
+  }
+}
+print(paste("The Probabilty max(B,C) < 1/2 =", j/length(B)))
+````
+
+The simulation for max{B,C} supports the table.
+
+### (e) $min\{B,C\} < 1/2$
+
+```{r e, eval=TRUE}
+j = 0
+for(i in 1:length(B)){
+  if(min(c(B[i],C[i])) < 0.5){
+    j = j+1
+  }
+}
+print(paste("The Probabilty min(B,C) < 1/2 =", j/length(B)))
+````
+The simulation for min{B,C} supports the table.
