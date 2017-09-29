@@ -1,0 +1,244 @@
+---
+title: "DATA 607 HW5"
+author: "Nathan Cooper"
+date: "September 28, 2017"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### (1)
+Create a .CSV file (or optionally, a MySQL database!) that includes all of the information above. You're encouraged to use a "wide" structure similar to how the information appears above, so that you can practice tidying and transformations as described below.
+
+First we input the data into a MySQL database. My first attempt at this created a table that was too tidy. I reorganized the table, using the instructional video: https://www.rstudio.com/resources/webinars/data-wrangling-with-r-and-rstudio/ as a reference to create something more untidy to fit with the spirit of the exercise.
+
+```{r MySQL, eval=TRUE, include=FALSE}
+library(RMySQL)
+db <- dbConnect(MySQL(), user='**********', password='************', dbname='flights', host='localhost')
+```
+```{r db_set_up, eval=TRUE}
+dbSendQuery(db, "drop table if exists ontime, cities;")
+#I'm am doing this as two tables.
+dbSendQuery(db, "CREATE TABLE cities(
+            city_id INT,
+            city varchar(50),
+            PRIMARY KEY (city_id)
+            );")
+dbSendQuery(db, "CREATE TABLE ontime(
+            city_id INT,
+            air_line varchar(50),
+            arrived varchar(50),
+            n INT,
+            FOREIGN KEY (city_id) REFERENCES cities(city_id)
+            );")
+#populate the cities table
+dbSendQuery(db, "INSERT INTO cities(
+            city_id,city)
+            VALUES (1, 'Los Angeles');")
+dbSendQuery(db, "INSERT INTO cities(
+            city_id,city)
+            VALUES (2, 'Phoenix');")
+dbSendQuery(db, "INSERT INTO cities(
+            city_id,city)
+            VALUES (3, 'San Diego');")
+dbSendQuery(db, "INSERT INTO cities(
+            city_id,city)
+            VALUES (4, 'San Francisco');")
+dbSendQuery(db, "INSERT INTO cities(
+            city_id,city)
+            VALUES (5, 'Seatle');")
+#populate the ontime table for the Alaska Flights
+dbSendQuery(db, "INSERT INTO ontime
+(city_id, air_line, arrived, n) 
+VALUES(1, 'Alaska', 'ontime', 497);")
+dbSendQuery(db, "INSERT INTO ontime
+(city_id, air_line, arrived, n) 
+VALUES(1, 'Alaska', 'delayed', 62);")
+dbSendQuery(db, "INSERT INTO ontime
+(city_id, air_line, arrived, n) 
+VALUES(2, 'Alaska', 'ontime', 221);")
+dbSendQuery(db, "INSERT INTO ontime
+(city_id, air_line, arrived, n) 
+VALUES(2, 'Alaska', 'delayed', 12);")
+dbSendQuery(db, "INSERT INTO ontime
+(city_id, air_line, arrived, n) 
+VALUES(3, 'Alaska', 'ontime', 212);")
+dbSendQuery(db, "INSERT INTO ontime
+(city_id, air_line, arrived, n) 
+VALUES(3, 'Alaska', 'delayed', 20);")
+dbSendQuery(db, "INSERT INTO ontime
+(city_id, air_line, arrived, n) 
+VALUES(4, 'Alaska', 'ontime', 503);")
+dbSendQuery(db, "INSERT INTO ontime
+(city_id, air_line, arrived, n) 
+VALUES(4, 'Alaska', 'delayed', 102);")
+dbSendQuery(db, "INSERT INTO ontime
+(city_id, air_line, arrived, n) 
+VALUES(5, 'Alaska', 'ontime', 1803);")
+dbSendQuery(db, "INSERT INTO ontime
+(city_id, air_line, arrived, n) 
+VALUES(5, 'Alaska', 'delayed', 305);")
+#Populate the ontime table for AM West Flights
+dbSendQuery(db, "INSERT INTO ontime
+(city_id, air_line, arrived, n) 
+VALUES(1, 'AM West', 'ontime', 694);")
+dbSendQuery(db, "INSERT INTO ontime
+(city_id, air_line, arrived, n) 
+VALUES(1, 'AM West', 'delayed', 117);")
+dbSendQuery(db, "INSERT INTO ontime
+(city_id, air_line, arrived, n) 
+VALUES(2, 'AM West', 'ontime', 4840);")
+dbSendQuery(db, "INSERT INTO ontime
+(city_id, air_line, arrived, n) 
+VALUES(2, 'AM West', 'delayed', 415);")
+dbSendQuery(db, "INSERT INTO ontime
+(city_id, air_line, arrived, n) 
+VALUES(3, 'AM West', 'ontime', 383);")
+dbSendQuery(db, "INSERT INTO ontime
+(city_id, air_line, arrived, n) 
+VALUES(3, 'AM West', 'delayed', 65);")
+dbSendQuery(db, "INSERT INTO ontime
+(city_id, air_line, arrived, n) 
+VALUES(4, 'AM West', 'ontime', 320);")
+dbSendQuery(db, "INSERT INTO ontime
+(city_id, air_line, arrived, n) 
+VALUES(4, 'AM West', 'delayed', 129);")
+dbSendQuery(db, "INSERT INTO ontime
+(city_id, air_line, arrived, n) 
+VALUES(5, 'AM West', 'ontime', 201);")
+dbSendQuery(db, "INSERT INTO ontime
+(city_id, air_line, arrived, n) 
+VALUES(5, 'AM West', 'delayed', 61);")
+```
+
+### (2)
+Read the information from your .CSV file into R, and use tidyr and dplyr as needed to tidy and transform your data. 
+
+First we will load tidyr and dplyr:
+
+```{r load, eval=TRUE}
+library(tidyr)
+library(dplyr)
+```
+
+Next I'll read the information from the MySQL database into r.
+
+```{r read, eval=TRUE}
+arrival<- db %>% dbSendQuery("SELECT DISTINCT a.air_line, c.city, a.arrived, a.n FROM ontime a, cities c WHERE a.city_id = c.city_id GROUP BY a.air_line, c.city, a.arrived;") %>% fetch() %>% tbl_df()
+arrival
+#First time I used the %>% operator and it worked. I have not smiled this big in awhile.  
+```
+
+It looks like the query I made put the data in a vertical table.  I will use tidyr's spread to organize it further:
+
+```{r speard, eval=TRUE}
+arrival <- arrival %>% spread(arrived, n)
+arrival
+```
+
+I also want to use dplyr's mutate to add a row of the percentage of on time flights, since the numbers range from 4840 to 12, it's difficult to look at the data and tell which city or airline has the best performance.
+
+```{r percentage, eval=TRUE}
+arrival <- arrival %>% mutate(total_flights = ontime+delayed)
+arrival <- arrival %>% mutate(percent_ontime = ontime / total_flights*100)
+arrival
+```
+
+
+From this table it looks as if AM West handles more flights in this region than Alaska Airlines. AM West handles more flights out of Phoenix than Alaska handles in total, but more on that in the next section.
+
+### (3)
+Perform analysis to compare the arrival delays for the two airlines.
+
+First we will do some simple summary statistics. 
+
+```{r summerise, eval=TRUE}
+arrival %>% summarise(median_percent = median(percent_ontime), sd_percent = sd(percent_ontime))
+```
+
+The median ontime percentage is 85.6% with a standard deviation of 7.2% this will come in useful when we evaluate top performing cities and and airlines below.
+
+```{r arrange, eval=TRUE}
+arrival %>% arrange(desc(percent_ontime))
+```
+
+
+
+```{r top_half, eval=TRUE}
+arrival %>% filter(percent_ontime > median(percent_ontime)) %>% select(air_line,percent_ontime) %>% arrange()
+```
+
+Alaska Air holds 3 of the 5 top spots in on time percentage with 2 above 90%, whereas AM West only has 1 above 90%.
+
+
+```{r top_half_city, eval=TRUE}
+arrival %>% filter(percent_ontime > median(percent_ontime)) %>% select(city,percent_ontime) %>% arrange()
+```
+
+Interestingly Phoenix is a top performing city for both airlines, however AM West handles 4840 flights out of Phoenix, whereas Alaska only handles 233.
+
+
+```{r bottom_half, eval=TRUE}
+arrival %>% filter(percent_ontime < median(percent_ontime)) %>% select(air_line,percent_ontime) %>% arrange()
+```
+
+Conversely, AM West holds 3 of 5 bottom-half performing cities, with two below 80%. Alaska lowest city is 83.1%
+
+```{r bottom_half_city, eval=TRUE}
+arrival %>% filter(percent_ontime < median(percent_ontime)) %>% select(city,percent_ontime) %>% arrange()
+```
+
+Seattle is a bottom-half performing city for both airlines. However, that is a small market for AM West at 262 flights total, but that is Alaska's top market with 2108 flights total.
+
+```{r barplot_per, eval=TRUE}
+par(las=2)
+barplot(arrival$percent_ontime,names.arg =arrival$city,horiz = TRUE,cex.names = 0.5, col = c("darkgreen", "darkgreen","darkgreen","darkgreen","darkgreen", "Orange","Orange","Orange","Orange","Orange" ), legend = c("Orange = AM West", "Green = Alaska"),args.legend = list(x ='topright', bty='n', inset=c(-0.075,0), cex=0.8))
+```
+
+```{r boxplots, eval=TRUE}
+city_by_airline <- arrival %>%  select(city,air_line,percent_ontime) %>%spread(air_line,percent_ontime)
+boxplot(city_by_airline$Alaska, city_by_airline$`AM West`, names = c("Alaska", "AM West") )
+```
+
+Again, from these plots it appears as if Alaska Airlines has more cities with a higher percent on time than AM West. However, we should not stop here as there are other factors to consider.
+
+```{r barplot_tot, eval=TRUE}
+par(las=2)
+barplot(arrival$total_flights,names.arg =arrival$city,horiz = TRUE,cex.names = 0.5, col = c("darkgreen", "darkgreen","darkgreen","darkgreen","darkgreen", "Orange","Orange","Orange","Orange","Orange" ), legend = c("Orange = AM West", "Green = Alaska"),args.legend = list(x ='topright', bty='n', inset=c(-0.075,0), cex=0.8))
+```
+
+As stated above, AM West handles more flights out of Phoenix (a top-half market) than Alaska does all five cities combined. Furthermore, Alaska's top market is in the bottom-half of performance. Below we will take the ratio of AM West flights to Alaska flights.
+
+```{r totals, eval=TRUE}
+alaska <- arrival %>% filter(air_line == "Alaska")
+al_sum <-sum(alaska$total_flights)
+am_west <- arrival %>% filter(air_line == "AM West")
+am_sum <- sum(am_west$total_flights)
+am_sum/al_sum
+```
+
+AM West handles nearly twice as much traffic. With this in mind we need to devise a better indicator of on time percentage. I will calculate the total ontime flights divided by the total flights for each airline to get a total on time percentage. 
+
+
+```{r overall_percent, eval=TRUE}
+alaska <- arrival %>% filter(air_line == "Alaska")
+al_tot_on <-sum(alaska$ontime)
+al_tot_on/al_sum
+am_west <- arrival %>% filter(air_line == "AM West")
+am_tot_on <- sum(am_west$ontime)
+am_tot_on/am_sum
+```
+
+So it appears that AM West slightly out-performs Alaska overall with 89.1% on time flights versus 86.6%. Weighting the on time percentages by the size of each city's flights over the total for each airline may be a better indicator.
+
+```{r weighted average, eval=TRUE}
+al_weighted <- arrival %>% filter(air_line == "Alaska")%>%mutate(weighted_ave = percent_ontime*total_flights/al_sum)
+al_weighted %>% select(city,weighted_ave)
+am_weighted <- arrival %>% filter(air_line == "AM West")%>%mutate(weighted_ave = percent_ontime*total_flights/am_sum)
+am_weighted %>% select(city,weighted_ave)
+```
+Finally we see that for Alaska, Seattle which is it's largest market, but a bottom-half performing city makes up 48% of it's on time flights, whereas for AM West Phoenix which is by large the largest market in the set and a top-half performing city makes up 67% of AM West's on time flights. This further supports the claim the AM West does better overall even though Alaska has more top-half cities in it's list.
