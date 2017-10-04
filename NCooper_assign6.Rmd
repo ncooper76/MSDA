@@ -100,7 +100,7 @@ Answer: A) Dependent $\boxed{B) Independent}$
 
 There is no causal connection between Jeff running out of gas or Liz watching the evening news. 
 
-### 7. Preidential Cabinet Permutations
+### 7. Presidential Cabinet Permutations
 
 The newly elected president needs to decide the remaining 8 spots available in the cabinet he/she is appointing. If there are 14 eligible candidates for these positions (where rank matters), how many different ways can the members of the
 cabinet be appointed?
