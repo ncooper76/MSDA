@@ -1,0 +1,468 @@
+---
+title: "DATA 607 Project 2"
+author: "Nathan Cooper"
+date: "October 4, 2017"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data Set 1: DACA
+
+```{r libraries, eval=TRUE}
+library(dplyr)
+library(tidyr)
+library(stringr)
+```
+
+
+First we pull the relevant data from the csv file, which I retrieved from https://catalog.data.gov/, which was posted by Durley Torres-Marin. In this case there are several tables on one file separated by text. I'll use read.table as this has the capability to start and stop on certain lines. Some of the countries have commas in the name so we need to take care of that before we load. 
+
+Again, using windows Power-Shell
+>get-content .\\daca_population_data.csv|%{$_ -replace "\b, \b", ";"}|set-content .\\daca_population_data2.csv
+
+In this case looking at the raw data was important because the table had wrapped large numbers in double quotes to use commas. I had to set the quote to \" make sure the table read correctly.
+
+### DACA Counties of Origin
+
+We will begin by examining the countries of origin of DACA recipients.
+
+```{r raw_data1,eval=TRUE}
+daca_countries <- "daca_population_data2.csv" %>% read.table(sep = ",", skip=5, nrows=153, quote = "\"") %>% tbl_df()
+#Now that we've read the data we can put the commas back in.
+daca_countries$V1<-daca_countries$V1 %>% str_replace_all(";", ",")
+#We can also remove the commas in the numbers and set then as integer.
+daca_countries$V2<-daca_countries$V2 %>% str_replace_all( ",", "") %>% as.integer()
+#Finally we can rename the columns.
+daca_countries<-daca_countries %>% rename(Country=V1,Population=V2,Percent=V3)
+head(daca_countries)
+tail(daca_countries)
+```
+
+
+There are so many countries that the data is hard to visualize. So taking a subset may be useful. 
+```{r daca_plot1, eval=TRUE}
+par(las=2)
+barplot(daca_countries$Percent,names.arg =daca_countries$Country,horiz = TRUE,cex.names = 0.1)
+summary(daca_countries$Population[-2])
+```
+
+The summary of the Population data shows that the data are highly right-skewed with a median of 110 but a mean of 4570.
+
+
+```{r daca_subset, eval=TRUE}
+daca_highest_countries <- daca_countries %>% filter(Percent >= 0.3, Percent < 100.0)
+daca_highest_countries
+par(las=2)
+barplot(daca_highest_countries$Percent,names.arg =daca_highest_countries$Country,horiz = TRUE,cex.names = 0.4)
+daca_countries_no_outliers <- daca_countries %>% filter(Population <= 1000)
+boxplot(daca_countries_no_outliers$Population)
+```
+
+We see from the bar plot that Mexico has be far the largest contribution to the DACA program, most of the other top contributors are from the Western Hemisphere with South Korea, India, and The Philippines being the only Eastern Hemisphere countries that contribute more than 0.3% of the DACA population. The box plot shows us that the majority of countries of origin in the DACA program have fewer than 1000 people. 
+
+### DACA States of Residence
+
+We will now examine the States of Residence of DACA recipients.
+
+```{r raw_data2,eval=TRUE}
+daca_states <- "daca_population_data2.csv" %>% read.table(sep = ",", skip=174, nrows=59, quote = "\"") %>% tbl_df()
+#Now that we've read the data we can put the commas back in.
+daca_states$V1<-daca_states$V1 %>% str_replace_all(";", ",")
+#We can also remove the commas in the numbers and set then as integer.
+daca_states$V2<-daca_states$V2 %>% str_replace_all(",", "")%>% as.integer()
+#Finally we can rename the columns.
+daca_states<-daca_states %>% rename(State=V1,Population=V2,Percent=V3)
+head(daca_states)
+tail(daca_states)
+```
+
+```{r states_sum, eval=TRUE}
+summary(daca_states$Population)
+```
+
+Again, median and mean are offset meaning that the data are right skewed with the mean being higher than the median. This means that a few states are home to a larger pool of DACA recipients than other states. You can see several outliers with population >20,000 in the boxplot with the top two states omitted for clarity.
+
+
+```{r states boxplot, eval=TRUE}
+daca_states_no_outliers <- daca_states %>% filter(Population < 50000)
+boxplot(daca_states_no_outliers$Population)
+```
+
+```{r states_barplot, eval=TRUE}
+par(las=2)
+daca_top_states <- daca_states %>% filter(Percent >= 2.4)
+barplot(daca_top_states$Percent,names.arg =daca_top_states$State,horiz = TRUE,cex.names = 0.5)
+```
+
+We see that California and Texas have the largest population of DACA recipients. Given that both states were once part of Mexico, share a border with Mexico, and as a result have large communities of Hispanic people. In this category are Florida and Arizona. Furthermore, the list contains states with large cities, such as Illinois and New York. This is not a surprise result, given that the majority of DACA recipients come from Latin American countries, particularly Mexico. Immigrants will tend to settle in communities that have economic opportunity and with communities that share their native language and culture. 
+
+### DACA Metropolitian Areas of Residence
+
+```{r raw_data3,eval=TRUE}
+daca_cities <- "daca_population_data2.csv"%>% read.table(sep = ",", skip=248, nrows=91, quote = "\"")%>% tbl_df()
+#Now that we've read the data we can put the commas back in.
+daca_cities$V1<-daca_cities$V1 %>% str_replace_all(";", ",")
+#We can also remove the commas in the numbers and set then as integer.
+daca_cities$V2<-daca_cities$V2 %>% str_replace_all(",", "") %>% as.integer()
+#Finally we can rename the columns.
+daca_cities<-daca_cities %>% rename(Metro=V1,Population=V2,Percent=V3)
+head(daca_cities)
+tail(daca_cities)
+```
+
+```{r metro_sum, eval=TRUE}
+summary(daca_cities$Population)
+```
+
+Metropolitan areas of residence follow the same pattern as above. The difference in the mean and median suggest that a few metropolitan areas are home to a larger percentage of DACA recipients. These cities are in the states that contain the larger populations, due to the states history and proximity to the larger countries of origin. 
+
+```{r cities_barplot, eval=TRUE}
+par(las=2)
+daca_top_cities <- daca_cities %>% filter(Percent >= 2.2)
+barplot(daca_top_cities$Percent,names.arg =daca_top_cities$Metro,horiz = TRUE,cex.names = 0.2)
+daca_top_cities
+```
+
+Once more we see a pattern that is consistent with the patterns above. The cities that have the most DACA recipients are in the states that have the most DACA recipients. The interesting feature of these data is that there are nearly as many DACA recipients living in smaller metropolitan areas, here lumped together as "Other CBSA - Core Based Statistical Area" 
+
+
+### DACA Recipient Sex Distribution
+
+```{r raw_data4,eval=TRUE}
+daca_sex <- "daca_population_data2.csv"%>% read.table(sep = ",", skip=356, nrows=3, quote = "\"") %>% tbl_df()
+#Now that we've read the data we can put the commas back in.
+#We can also remove the commas in the numbers and set then as integer.
+daca_sex$V2<-daca_sex$V2 %>% str_replace_all(",", "")%>% as.integer()
+#Finally we can rename the columns.
+daca_sex<-daca_sex %>% rename(Sex=V1,Population=V2,Percent=V3)
+daca_sex
+```
+
+```{r daca_sex_plot, eval=TRUE}
+par(las=2)
+barplot(daca_sex$Population,names.arg =daca_sex$Sex,horiz = TRUE,cex.names = 0.5)
+```
+
+Seems like there is a statistically significant larger amount of female DACA recipient than male. I'm curious as to why. To verify, according to US census data, https://www.census.gov/prod/cen2010/briefs/c2010br-03.pdf, males outnumber females in every age category < 24 years old, which as we will see shortly is the median age of the DACA population. Females account for 48.8% of the population < 24 years old in the US.
+http://www.r-tutor.com/elementary-statistics/hypothesis-testing/two-tailed-test-population-proportion
+
+```{r z_score, eval=TRUE}
+males <- 10319427+10389638+10579862+11303666+11014176
+females <- 9881935+9959019+10097332+10736677+10571823
+n = sum(daca_sex$Population)
+p = daca_sex$Population[1]/n
+p
+p0 = females/(males+females)
+p0
+
+z = (p-p0)/sqrt(p0*(1-p0)/n) 
+z
+```
+ The typical Z-score for significance at the 95% level is $\pm 1.96$:
+ 
+```{r z_alpha}
+alpha = 0.05
+z_alpha_half = qnorm(1-alpha/2)
+z_alpha_half
+```
+
+
+> There is a signifcant gender bias in the DACA program. My hypothesis as to why is that young Latin American Men are more likely to be arrested. From the DACA FAQ: "have not been convicted of a felony offense, a significant misdemeanor, or more than three misdemeanors of any kind;" http://www.immigrationequality.org/get-legal-help/our-legal-resources/path-to-status-in-the-u-s/daca-deferred-action-for-childhood-arrivals/
+
+Hispanics make up 27.5% of NYC's population (1) for example, but 36.1% of arrests(2), and men are nearly 3 times more likely to be arrested than women(3).
+
+(1)https://en.wikipedia.org/wiki/Demographics_of_New_York_City
+
+(2)http://www1.nyc.gov/assets/nypd/downloads/pdf/analysis_and_planning/year-end-2016-enforcement-report.pdf
+
+(3)https://www.bjs.gov/content/pub/pdf/aus9010.pdf
+
+
+### DACA Recpient Age Distribution. 
+
+```{r raw_data5,eval=TRUE}
+daca_age <- "daca_population_data2.csv" %>% read.table(sep = ",", skip=363, nrows=6, quote = "\"")%>% tbl_df()
+#Now that we've read the data we can put the commas back in.
+#We can also remove the commas in the numbers and set then as integer.
+daca_age$V2<-daca_age$V2 %>% str_replace_all(",", "") %>% as.integer()
+#Finally we can rename the columns.
+daca_age<-daca_age %>% rename(Age=V1,Population=V2,Percent=V3)
+daca_age
+daca_age_stats <- "daca_population_data2.csv" %>% read.table(sep = ",", skip=370, nrows=3, quote = "\"")%>%tbl_df()
+daca_age_stats<-daca_age_stats %>% rename(Stat=V1,Age=V2)
+#We need to drop an empty column from this table
+daca_age_stats <- daca_age_stats %>% select(-V3)
+daca_age_stats
+```
+
+```{r daca_age_plot, eval=TRUE}
+par(las=2)
+barplot(daca_age$Population,names.arg =daca_age$Age,horiz = TRUE,cex.names = 0.5)
+```
+
+The age requirements for DACA are:
+
+You were under the age of 31 as of June 15, 2012;
+You entered the United States prior to your 16th birthday;
+You have resided in the United States since June 15, 2007 and currently are present in the U.S.;
+You were in the United States on June 15, 2012 and must be physically in the U.S. at the time of filing for your request for deferred action;
+
+These data are as of September 4th 2017. The lack of DACA recipients under 16 is striking. This may be due to parents being reticent to sign their minor children up, out of fear of immigration action.
+
+
+### DACA Martial Status
+
+```{r raw_data6,eval=TRUE}
+daca_mrd <- "daca_population_data2.csv" %>% read.table(sep = ",", skip=390, nrows=5, quote = "\"") %>% tbl_df()
+#Now that we've read the data we can put the commas back in.
+#We can also remove the commas in the numbers and set then as integer.
+daca_mrd$V2<-daca_mrd$V2 %>% str_replace_all(",", "")%>% as.integer()
+#Finally we can rename the columns.
+daca_mrd<-daca_mrd %>% rename(Status=V1,Population=V2,Percent=V3)
+daca_mrd
+```
+```{r daca_mrg_plot, eval=TRUE}
+par(las=2)
+barplot(daca_mrd$Percent,names.arg =daca_mrd$Status,horiz = TRUE,cex.names = 0.5)
+```
+
+DACA is targeted at young people, so the low marriage rate is not surprising. Given that it is young people that are married here, the low Divorce Rate is somewhat surprising. This may be a result of fairly new marriages and the large amount of Latinos in the DACA population, who tend to have lower Divorce Rates overall: http://www.healthymarriageinfo.org/research-and-policy/marriage-facts/culture/Hispanics-and-Latinos/index.aspx
+
+> My impression of these data is that the DACA program seems very successful for giving an opportunity for young undocumented immigrants a opportunity to become American Citizens. The bias in the Sex Distribution does warrent further investigation, as it may be due to institutional racism and sexism that may be external to the program itself. Otherwise there is no evidence in these data that the program merited suspension by the current administration. 
+
+
+## DATA Set 2: MOJAVE Blazars
+
+For the next set of data I'll be scraping the webpage, posted by me, as this was my research group when I was at Purdue:  http://www.physics.purdue.edu/astro/MOJAVE/velocitytable.html which is a sample of Active Galactic Nuclei (AGN) called Blazars. A subclass that is better known are Quasars, in fact some Blazars are Quasars albeit more compact in size and luminous. What I am after is just the object's names and their jet feature speeds in units of the speed of light (c). What makes Blazars a special type of AGN is that the central Super Massive Black holes eject plasma clouds (the jet features) at close to the speed of light. Since we are looking down the jet and length toward us gets contracted due to special relativity, these features appear to move faster than light in our frame of reference.
+
+Please note that I am very familiar with loading data into a program using SQL databases and .csv files, as that was part of my job at Purdue. I have some PERL scripts posted to my github that are written just for that purpose. I really wanted to give web scraping a try, as I had never done it before. 
+
+First we will use rvest:
+
+```{r rvest, eval=TRUE}
+library(rvest)
+```
+
+Next, using https://blog.rstudio.com/2014/11/24/rvest-easy-web-scraping-with-r/ as a guide, we will set up the web scraping:
+
+```{r scrape ,eval=TRUE}
+url <- "http://www.physics.purdue.edu/astro/MOJAVE/velocitytable.html"
+mojave <- url %>% read_html() %>% html_node(xpath='//*[@id="myTable"]') %>% html_table()
+head(mojave)
+```
+
+### MOJAVE Flux Density vs Feature Size
+
+Now we want to get just the names and  the Flux Density of the features (how bright they are at the telescope) and their distances in parsecs (how wide the features are, note 1 pc = 3.25 light-years). Maybe there is a relationship between how bright a feature is and how big it is.
+
+
+```{r mojave_flux, eval=TRUE}
+mojave_flux <- mojave %>% select(`B1950
+Name`, `Flux Density  (mJy)`,`Distance (mas)`,`Distance (pc)`) 
+#We need to drop the NA's since some sources to not have reliable distance to source measurements.
+mojave_flux <- mojave_flux %>% drop_na()
+head(mojave_flux)
+#The first test looks at linear size of the feature vs. brightness at the telescope.
+fit <- lm(log(mojave_flux$`Distance (pc)`)~log(mojave_flux$`Flux Density  (mJy)`))
+# log-log transformations were done as the data did not appear linear un-transformed.
+summary(fit)
+plot(log(mojave_flux$`Flux Density  (mJy)`), log(mojave_flux$`Distance (pc)`), col="blue")
+abline(fit, col="red")
+#Calculating distance from angular size is model dependant so it may be better to use angular size instead.
+#Both Flux Density and Distance in milli-arc-seconds (1/3,600,000th of a degree) are direct measurments.
+fit2 <- lm(log(mojave_flux$`Distance (mas)`)~log(mojave_flux$`Flux Density  (mJy)`))
+summary(fit2)
+plot(log(mojave_flux$`Flux Density  (mJy)`), log(mojave_flux$`Distance (mas)`), col="violet")
+abline(fit2, col="green")
+```
+
+There is a statistically significant tendency for smaller features to produce brighter sources. If We were preparing these data for publication, my next step would be to use non parametric correlation coefficients and partial correlation coefficients to factor out redshift, which is a proxy for distance to source, and the equations relating these measurements are likely to be non-linear. Additionally, this could just be due to our ability to resolve smaller objects that are closer.
+
+### MOJAVE Jet Speeds
+
+I now want to look at the speeds of individual jet features.
+
+```{r mojave_speeds, eval=TRUE}
+mojave_speeds <- mojave %>% select(`B1950
+Name`, `Flux Density  (mJy)` , `Speed (c)`)
+head(mojave_speeds)
+```
+
+We need to use the $\pm$ symbol to separate out the uncertainty, and drop the missing data. 
+
+```{r sep_speeds, eval=TRUE}
+mjv_sep_speeds <- mojave_speeds %>% separate('Speed (c)', into= c("Speed (c)" , "Error (c)"), sep="±", remove=TRUE) %>% drop_na()
+mjv_sep_speeds$`Speed (c)` <- as.numeric(mjv_sep_speeds$`Speed (c)`) 
+mjv_sep_speeds$`Error (c)` <- as.numeric(mjv_sep_speeds$`Error (c)`) 
+mjv_sep_speeds$`Speed (c)` %>%  summary()
+head(mjv_sep_speeds)
+fit3 <- lm(mjv_sep_speeds$`Speed (c)` ~ log(mjv_sep_speeds$`Flux Density  (mJy)`))
+summary(fit3)
+plot(log(mjv_sep_speeds$`Flux Density  (mJy)`), mjv_sep_speeds$`Speed (c)`, col="cyan")
+abline(fit3, col = "magenta")
+```
+
+Since there are jet feature with 0 speed, we had to use a semi-log plot because $\lim_{x \rightarrow 0}  \log{x} = -\infty$. These data seem fairly scattered around, the trend line is flat, and there is no statistically significant relationship between jet feature speed and feature brightness. In other words there is no connection between the oscillation frequency of the plasma (brightness), and it's bulk motion (jet speed).
+
+## Data Set 3: NYPD Traffic Logs
+
+For the last data set for this project we will analyze NYPD traffic data. This was posted to the discussion board by Yuen Chun Wong. Yeun asked that we look for:
+
+\begin{itemize}
+\item Collision time and location frequencies
+
+\item Location & cause of the collision
+
+\item cause of the collision & vehicle type
+
+\item Time & vehicle type (e.g. motorist is more likely driving on the road in summer than winter)
+
+\end{itemize}
+
+For the specific data that Yuen posted, I see no data that measures time of collision. In fact these data are specific to September 2017. So, the first and last items are not measurable from these data. I am however interested in risk by cyclists and pedestrians so I will compare cyclist injury/death to motorist injury/death and then pedestrian injury/death to motorist injury/death. The tables that record vehicle type and location, and collision cause and location are very similar in how they were organized. I will focus on vehicle type and location, as the tidyr and dplyr tools to organize the data will be identical.
+
+```{r nypd_data1, eval=TRUE}
+#The first row are the col titles so I cut them out and used rename instead.
+nypd_traffic_coll <- "cityacc-en-us.csv" %>% read.table(sep = ",", skip=4, nrows=83, quote = "\"") %>% tbl_df()
+nypd_traffic_coll
+nypd_traffic_coll <- nypd_traffic_coll %>% rename(GeoCode=V1, GeoCodeLabel=V2, Number_of_Motor_Vehicle_Collisions=V3,Vehicles_or_Motorists_Involved=V4, Injury_or_Fatal_Collisions=V5, MotoristsInjured=V6, MotoristsKilled=V7, PassengInjured=V8,PassengKilled=V9, CyclistsInjured=V10, CyclistsKilled=V11, PedestrInjured=V12,PedestrKilled=V13,  Bicycle=V14)
+head(nypd_traffic_coll)
+```
+
+### Motor Vehicle Risk of Death and Injury
+
+We will compare risk by analyzing the percentage of deaths and injuries of each vehicle type to the number of collisions involving that vehicle. 
+
+First a general overview of the Whole city and the 5 Burroughs:
+
+```{r city_burr, eval=TRUE}
+city_burr <- nypd_traffic_coll %>% filter(GeoCode=="C"|GeoCode=="M"|GeoCode=="Q"|GeoCode=="K"|GeoCode=="B"|GeoCode=="S")
+city_burr
+```
+
+
+#### Total Collisions
+
+First we create a subset of the data, and then create a bar plot.
+
+```{r city_burr_col, eval=TRUE}
+city_burr_col <- city_burr %>% select(GeoCode, Number_of_Motor_Vehicle_Collisions)
+city_burr_col$Number_of_Motor_Vehicle_Collisions %>% barplot(col=c("black", "red", "orange", "yellow", "green", "blue"), names.arg=city_burr_col$GeoCode)
+```
+
+#### Collisions by Population
+
+According to this plot Brooklyn and Queens have the most collisions but they are the most populated Boroughs. 
+We will bring in some additional data, population in NYC by Borough, to help with this analysis:
+
+```{r nyc_pop, eval=TRUE}
+url2 <- "https://www.citypopulation.de/php/usa-newyorkcity.php"
+city_pop <- url2 %>% read_html() %>% html_node(xpath='//*[@id="ts"]') %>% html_table()
+city_pop
+#I did the part below by hand as the two tables are ordered differently and it wasn't obvivous to me how to sort to get the same order.
+city_burr$Pop <- c(city_pop[6,6], city_pop[3,6], city_pop[1,6] ,city_pop[2,6], city_pop[4,6], city_pop[5,6])
+city_burr$Pop<-city_burr$Pop %>% str_replace_all(",", "")%>% as.integer()
+city_burr<- city_burr %>% mutate(Collisions_per_Pop = Number_of_Motor_Vehicle_Collisions/Pop)
+city_burr
+city_burr$Collisions_per_Pop %>% barplot(col=c("black", "red", "orange", "yellow", "green", "blue"), names.arg=city_burr_col$GeoCode)
+```
+
+When we factor in the population of each borough, the collisions numbers are very similar with all of them around 2 parts per mille.
+
+#### Motor Vehicle Injury and Death
+
+Not All accidents by car result in an injury or death. We will now look at car crashes that result in injury or death.
+
+```{r car_casulty, eval=TRUE}
+car_injury <- city_burr %>% select(GeoCode, Injury_or_Fatal_Collisions, MotoristsInjured, PassengInjured, MotoristsKilled, PassengKilled, Pop) %>% mutate(Total_per_pop = Injury_or_Fatal_Collisions/Pop, Total_injured = MotoristsInjured+PassengInjured, Total_injured_per_pop = Total_injured/Pop, Total_killed = MotoristsKilled + PassengKilled, Total_killed_per_pop = Total_killed/Pop, Killed_per_Injury = Total_killed/Total_injured)
+car_injury
+car_injury$Total_per_pop %>% barplot(col=c("black", "red", "orange", "yellow", "green", "blue"), names.arg=car_injury$GeoCode ,ylab = "Injuries and Deathes per Population")
+car_injury$Total_injured_per_pop %>% barplot(col=c("black", "red", "orange", "yellow", "green", "blue"), names.arg=car_injury$GeoCode ,ylab = "Injuries per Population")
+car_injury$Total_killed_per_pop %>% barplot(col=c("black", "red", "orange", "yellow", "green", "blue"), names.arg=car_injury$GeoCode ,ylab = "Deathes per Population")
+car_injury$Killed_per_Injury %>% barplot(col=c("black", "red", "orange", "yellow", "green", "blue"), names.arg=car_injury$GeoCode ,ylab = "Deaths per Injury")
+```
+
+According to these data about 1:4 car collisions result in injury or death, and 6:10,000 result in death of a motorist or passenger.
+
+```{r arith1, eval=TRUE}
+#averaged over all boroughs, city totals factored out of vectors.
+length(city_burr[2:6])
+sum(city_burr$Injury_or_Fatal_Collisions[2:6]/city_burr$Number_of_Motor_Vehicle_Collisions[2:6])/length(city_burr[2:6])
+sum(car_injury$Total_killed[2:6]/city_burr$Number_of_Motor_Vehicle_Collisions[2:6])/length(city_burr[2:6])
+```
+
+### Bicycle Collisions:
+
+Our first step again is to create an appropriate subset of the data and create a bar plot.
+
+```{r cycle, eval=TRUE}
+city_cyc_col <- city_burr %>% select(GeoCode, CyclistsInjured, CyclistsKilled, Bicycle, Pop) %>% mutate(Bicylce_per_Pop=Bicycle/Pop, Total_injured_killed = CyclistsInjured+CyclistsKilled, Injured_killed_per_pop = Total_injured_killed/Pop)
+city_cyc_col
+city_cyc_col$Bicylce_per_Pop %>% barplot(col=c("black", "red", "orange", "yellow", "green", "blue"), names.arg=city_cyc_col$GeoCode, ylab="Bicylce Collisions per Population")
+city_cyc_col$Injured_killed_per_pop %>% barplot(col=c("black", "red", "orange", "yellow", "green", "blue"), names.arg=city_cyc_col$GeoCode,ylab="Bicylce Collision Injuries and Deaths per Population")
+```
+
+The Bicycle collision data differs from the motor vehicle collisions in that you have a higher chance of collision in Manhattan and Brooklyn after factoring in population than in the other boroughs. The overall measure for a bicycle collision are  40 to 90 parts per million, making such collisions 100 times less likely than vehicle collisions. These data suggest that Manhattan and Brooklyn have more cyclists than other Boroughs.
+
+```{r arith2, eval=TRUE}
+sum(city_cyc_col$Total_injured_killed[2:6]/city_cyc_col$Bicycle[2:6]/length(city_cyc_col[2:6]))
+```
+
+Unlike vehicles where collisions are slightly unlike to cause injury, at 85.4% getting hit on a bicycle is very likely to result injury. Only 1 collisions resulted in death.
+
+### Pedestrian Collisions
+
+Finally we look at the proportion of collisions that involve pedestrians. 
+
+```{r ped, eval=TRUE}
+city_ped_col <- city_burr %>% select(GeoCode, PedestrInjured,PedestrKilled,Pop) %>% mutate(Ped_Total = PedestrInjured+PedestrKilled, Ped_per_pop = Ped_Total/Pop)
+city_ped_col
+city_ped_col$Ped_per_pop %>% barplot(col=c("black", "red", "orange", "yellow", "green", "blue"), names.arg=city_ped_col$GeoCode)
+```
+
+
+You have slightly less risk of getting hit as a pedestrian in Queens and Staten Island. As with cyclists the risk is measured in range of 45-90 parts per million making this mode of transport less risky than motor vehicles by a factor of 100.
+
+### Vechicle Type and Location 
+
+Now we will examine vehicle type involved in a collision and location.
+
+```{r type_loc, eval=TRUE}
+nypd_type_loc <- "cityacc-en-us2.csv" %>% read.table(sep = ",", skip=4, nrows=898, quote = "\"") %>% tbl_df()
+nypd_type_loc <- nypd_type_loc %>% rename(GeoCode=V1, GeoCodeLabel=V2, VehicleTypeCode=V3, VehicleTypeDescription=V4, Number_of_Collisions=V5)
+tail(nypd_type_loc)
+```
+
+The vehicle codes and Descriptions are redundant so we can make a key and then drop the descriptions.
+
+```{r key, eval=TRUE}
+key <- nypd_type_loc %>% select(VehicleTypeCode,VehicleTypeDescription)
+key <- key[1:15,]
+key
+nypd_type_loc <- nypd_type_loc %>% select(GeoCode, GeoCodeLabel, VehicleTypeCode, Number_of_Collisions)
+head(nypd_type_loc)
+```
+
+Now I want to make the vehicle code the columns so I can easier analyze by Vehicle type:
+
+```{r spread,  eval=TRUE}
+nypd_type_loc <- nypd_type_loc %>% spread(VehicleTypeCode,Number_of_Collisions)
+#NA's in this case mean no collisions, so we can set them to 0.
+nypd_type_loc[is.na(nypd_type_loc)] <- 0
+nypd_type_loc
+# The GeoCode and GeoCode labels are also redundant We'll use the Lables
+nypd_type_loc <- nypd_type_loc[,-1]
+tail(nypd_type_loc)
+par(las=2)
+barplot(nypd_type_loc$TAXI, names.arg = nypd_type_loc$GeoCodeLabel, cex.names = 0.2)
+```
+
+Now we have the data organized where we can look at collisions by vehicle type and location. As an example I selected taxis. In NYC police precincts with lower numbers tend to be in Manhattan and we see lots of taxi collisions in Manhattan, far more than any other borough.
