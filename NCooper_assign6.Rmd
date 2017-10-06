@@ -122,13 +122,13 @@ cabnt
 
 A bag contains 9 red, 4 orange, and 9 green jellybeans. What is the probability of reaching into the bag and randomly withdrawing 4 jellybeans such that the number of red ones is 0, the number of orange ones is 1, and the number of green ones is 3? Write your answer as a fraction or a decimal number rounded to four decimal places.
 
-This would be the product of the individual Probabilities
+This would be the product of the individual combinations for each color divided by the total combinations for the set
 $$
-P = \frac{4}{22}*\frac{9}{21}*\frac{8}{20}*\frac{7}{19} = \frac{4!*9!*18!}{3!*6!*22!}
+P = \frac{9!}{(9-0)!0!}*\frac{4!}{(4-3)!3!}*\frac{9!}{(9-3)!3!}*\frac{(22-4)!4!}{22!} = \frac{4*4!*9!*18!}{3!*6!*22!}
 $$
 
 ```{r jellybean, eval=TRUE}
-(4*factorial(9)*factorial(18))/(factorial(6)*factorial(22))
+choose(9,0)*choose(4,1)*choose(9,3)/choose(22,4)
 ```
 
 \boxed{1.148325%}
