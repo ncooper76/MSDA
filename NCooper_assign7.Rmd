@@ -1,0 +1,189 @@
+---
+title: "DATA 605 HW7"
+author: "Nathan Cooper"
+date: "October 12, 2017"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Distribution of N Uniform Random Variables
+Let X1, X2, . . . , Xn be n mutually independent random variables, each of
+which is uniformly distributed on the integers from 1 to k. Let Y denote the
+minimum of the Xi's. Find the distribution of Y.
+
+Drawing from: https://www2.stat.duke.edu/courses/Spring12/sta104.1/Lectures/Lec15.pdf 
+
+Slide 7 gives the main argument to this problem.
+
+and 
+
+https://danieltakeshi.github.io/2016/09/25/the-expectation-of-the-minimum-of-iid-uniform-random-variables/
+
+The beginning part of this page takes the calculation done on slide 7 above and shows how the products  of the CDF come about more clearly.
+
+For an individual $X_i$ the CDF, $F(x)$ where $x \in (1,k)$ is:
+
+$$
+F(x) = \int_1^x \frac{dx}{k-1} = \frac{x-1}{k-1}
+$$
+
+Note also that Probability, $P(X_i<x) = F(x)$. We will substitute this expression in the final stages of the calculation below. Which $X_i$ is the minimum $minX_i$ is arbitrary, and can be defined by it's compliment:
+
+$$
+P(min X_i < x) = 1 - P(X_i \geq x) \\ 
+P(min X_i < x) = 1 - \prod_{i=1}^n[1 -P(X_i \leq x)] \\
+P(min X_i < x) = 1-[1 - P(X_i \leq x)]^n \\
+P(min X_i < x) = 1- [1 - \frac{x-1}{k-1}]^n \\
+\bf{F(Y) = 1-[1- \frac{x-1}{k-1}]^n}
+$$
+
+Where Y is the distribution of the minimum $X_i$, as defined by the problem text.
+
+
+##2. Copy Machine Failure Probabilty 
+Your organization owns a copier (future lawyers, etc.) or MRI (future doctors).
+This machine has a manufacturer's expected lifetime of 10 years. This means
+that we expect one failure every ten years. (Include the probability statements
+and R Code for each part.).
+
+If we can expect 1 failure every 10 years this means that the probability (p) for failure in a given year is 0.10 since $E(x) = \sum xm(x) = 10(p) = 1$. We expect 1 failure, there are 10 years and each year has an equal chance of failure. 
+
+### a. Geometric 
+What is the probability that the machine will fail after 8 years?. Provide also the
+expected value and standard deviation. Model as a geometric. (Hint: the probability is
+equivalent to not failing during the first 8 years..)
+
+From above $p = 0.1$, and $q = 1- p =0.9$
+According to the hint we assume the copier fails on or after the 9th year so n = 9.
+
+$$
+P(X = n) = q^{n-1}*p \\
+P(X \leq 9) = \sum_{i=0}^{8}q^i*p = \\
+0.1+0.9*0.1+0.9^2*0.1+0.9^3*0.1+...+0.9^80.1=0.6125795
+$$
+To get the probability that the copier fails after 8 years we take the compliment $P(X \geq 9) = 1- 0.6125795 = 0.3874205$
+
+We can verify using pgeom in r with x = 8 and p = 0.1 and taking the compliment:
+
+```{r geom, eval=TRUE}
+1-pgeom(8,0.1)
+```
+
+According to the Geometric Distribution there is a 38.74% probability of the copier failing after 8 years.
+
+For the Geometric Distribution the Expected Value is simply $E[X] =\frac{1}{p} = 10\space years$ and the Standard Deviation is $SD[X] = \sqrt{\frac{q}{p^2}} = 9.486833\space years$.
+
+### b. Exponential 
+What is the probability that the machine will fail after 8 years?. Provide also the
+expected value and standard deviation. Model as an exponential.
+
+For the exponential density we will let $\lambda = 0.1$ since $\mu = 10$ and $\lambda = \frac{1}{\mu}$.
+
+From the text, the probability that there is a failure within 8 years is:
+
+$$
+P(T \leq 8) = \int_0^8 0.1e^{-0.1t}dt = 1-e^{-0.1*8} = 0.550671
+$$
+
+The probability of failure after 8 years failure is the compliment $e^{-0.1*8} = 0.449329$ 
+
+```{r exp, eval=TRUE}
+1-pexp(8,0.1)
+```
+According to Exponential Density there is a 44.93% probability of the copier failing after 8 years.
+
+The expected value, taken on the interval $0 to \infty$ is defined as:
+
+$$
+E[X] = \int_0^{\infty}xf(x)dx = \int_0^{\infty}\lambda xe^{-\lambda x}dx \\
+\int_0^{\infty}\lambda xe^{-\lambda x}dx = \frac{\lambda}{\lambda^2}  = \frac{1}{\lambda}\\
+E[X] = \mu  = 10\space years
+$$ 
+
+I used wolframalpha.com to evaluate $\int_0^{\infty}\lambda xe^{-\lambda x}dx$
+
+Now for Standard Deviation:
+$$
+Var[X] = \int_0^{\infty}(x - \mu)^2f(x)dx = \int_0^{\infty}\lambda x^2e^{-\lambda x}dx - \mu^2 \\
+\int_0^{\infty}\lambda x^2e^{-\lambda x}dx = \frac{2\lambda}{\lambda^3}  = \frac{2}{\lambda^2}\\
+Var[X] = 2\mu^2 - \mu^2  = 100\space years^2 \\
+SD[X] = \sqrt{Var[X]} = 10\space years
+$$
+
+I used wolframalpha.com to evaluate $\int_0^{\infty}\lambda x^2e^{-\lambda x}dx$
+
+### c. Binomial
+What is the probability that the machine will fail after 8 years?. Provide also the
+expected value and standard deviation. Model as a binomial. (Hint: 0 success in 8
+years)
+
+We can take $p = 0.1$ and $q =0.9$
+
+The probability that there are 0 successes and 8 failures is:
+
+$$
+P(X\leq n) = p^0q^n\\
+P(X \leq 8) = p^0q^8 = 0.9^8 = 0.4304672
+$$
+
+We can verify in r using pbinom with x=0, size = 8, p = 0.1
+
+```{r bimnom, eval=TRUE}
+pbinom(0,8,0.1)
+```
+
+According to the Binomial Distribution there is a 43.05% chance of failure after 8 years. As there are no failures within 8 years, the copy machine will fail some time after that.
+
+The expected value for a binomial distribution is:
+
+$E[X] = np = 8*0.1 = 0.8\space failures$
+
+And Standard Deviation is:
+
+$SD[X] = \sqrt{Var[X]} = \sqrt{npq} =\sqrt{8*0.1*0.9} = 0.8485281\space failures$
+
+### d. Poisson 
+What is the probability that the machine will fail after 8 years?. Provide also the
+expected value and standard deviation. Model as a Poisson. 
+
+$$
+P(X=x) = \frac{\lambda^x}{x!}e^{-\lambda}
+$$
+In this case we let x = 0 (0 copy machine failures) such that:
+
+$$
+\lambda^0 = 1 \\
+0! =1 \\
+P(X=0) = e^{-\lambda}
+$$
+
+Where 
+$$
+\lambda = \frac{np}{t} = 0.8\\
+n = 8 \\
+p =0.1 \\
+t =1 \\
+$$ 
+
+t is the time interval of interest, 1 year, n is the total number of time periods of interest, 8 years, and p is the probability of the event happening within a time period, 0.1 or 10%.
+
+Finally,
+
+$P(X=0) = e^{-0.8} = 0.449329$
+
+We can check using ppois with q =0 and lambda =0.8
+
+```{r pois, eval=TRUE}
+ppois(0,0.8)
+```
+
+According to the Poisson Distribution there is a 44.93% chance of failure after 8 years. As there are no failures within 8 years, the copy machine will fail some time after that.
+
+For the Poisson Distribution the Expected Value is simply $E[X] =\lambda = 0.8\space failures$ and the Standard Deviation is $SD[X] = \sqrt{\lambda} = 0.8944272\space failures$ 
