@@ -1,0 +1,24 @@
+<book_table>
+<book>
+  <author1>Nathaniel J. Cooper</author1>
+  <title>The Kilo-Parsec Properties of Blazars</title>
+  <year>2010</year>
+  <subject>Astrophysics - Active Galactic Nuclei - Blazars</subject>
+  <ShamelessSelfPromotion>TRUE</ShamelessSelfPromotion>
+</book>
+<book>
+  <author1>Julian H. Krolik</author1>
+  <title>Active Galactic Nuclei: From the Central Black Hole to the Galactic Environment</title>
+  <year>1999</year>
+  <subject>Astrophysics - Active Galactic Nuclei - General</subject>
+  <ShamelessSelfPromotion>FALSE</ShamelessSelfPromotion>
+</book>
+<book>
+  <author1>George B. Rybicki</author1>
+  <author2>Alan P. Lightman</author2>
+  <title>Radiative Processes in Astrophysics</title>
+  <year>2004</year>
+  <subject>Astrophysics - Radiation</subject>
+  <ShamelessSelfPromotion>FALSE</ShamelessSelfPromotion>
+</book>
+</book_table>

@@ -1,0 +1,70 @@
+---
+title: "DATA 607 HW 7"
+author: "Nathan Cooper"
+date: "October 13, 2017"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Web API Formats
+
+Pick three of your favorite books on one of your favorite subjects. At least one of the books should have more 
+than one author. For each book, include the title, authors, and two or three other attributes that you find 
+interesting.'
+
+Take the information that you've selected about these three books, and separately create three files which 
+store the book's information in HTML (using an html table), XML, and JSON formats (e.g. "books.html", 
+"books.xml", and "books.json"). To help you better understand the different file structures, I'd prefer that you 
+create each of these files "by hand" unless you're already very comfortable with the file formats.
+
+### JSON Format
+
+First we need to load the 'jsonlite' library to load the json file into a data frame. I initially tried 'rjson' but it put the data into a data frame of 1 row.
+
+```{r rjson, eval=TRUE}
+library('jsonlite')
+```
+
+Now we need to use fromJSON to load the data into a data frame:
+
+```{r json_df, eval=TRUE}
+book_df1 <- fromJSON('books.json', simplifyDataFrame = TRUE)
+book_df1
+```
+
+I have tried this with both second author data for each book with the first two books empty, or only second author data for the final book. It does not matter, as fromRJSON() fills in 'NA' for the missing data.
+
+### HTML format
+
+We will use the readHTMLtable() function of the XML package.
+
+```{r xml, eval=TRUE}
+library('XML')
+```
+
+We simply call the function with the appropriate file called in the readHTMLTable() function.
+
+```{r book2, eval=TRUE}
+book_df2 <- readHTMLTable('books.html')
+book_df2
+```
+
+Note that html syntax is different than json syntax in one very important way; for html you need to have your table headers called first. Because of this I had blank second author data for the first two books. For the json file you could simply not put those data at all and fromJSON() would add the appropriate columns with the missing data marked 'NA'.
+
+### XML format
+
+We can use the XML library again this time we use the xmlToDataFrame() function.
+
+```{r xml_df, eval=TRUE}
+book_df3 <- xmlToDataFrame('books.xml')
+book_df3
+```
+
+Much like the JSON file, in this case not entering the author2 data for the first two books was not a problem for xmlToDataFrame() as it marked the missing data as 'NA'. 

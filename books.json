@@ -1,0 +1,32 @@
+[
+  {
+  "firstName1": "Nathaniel",
+  "middleInt1": "J.",
+  "lastName1": "Cooper",
+  "Title": "The Kilo-Parsec Properties of Blazars",
+  "Year": "2010",
+  "Subject": "Astrophysics - Active Galactic Nuclei - Blazars",
+  "Shameless Self Promotion":"TRUE"
+},
+{
+  "firstName1": "Julian",
+  "middleInt1": "H.",
+  "lastName1": "Krolik",
+  "Title": "Active Galactic Nuclei: From the Central Black Hole to the Galactic Environment",
+  "Year": "1999",
+  "Subject": "Astrophysics - Active Galactic Nuclei - General",
+  "Shameless Self Promotion":"FALSE"
+},
+{
+  "firstName1": "George",
+  "middleInt1": "B.",
+  "lastName1": "Rybicki",
+  "firstName2": "Alan",
+  "middleInt2": "P.",
+  "lastName2": "Lightman",
+  "Title": "Radiative Processes in Astrophysics",
+  "Year": "2004",
+  "Subject": "Astrophysics - Radiation",
+  "Shameless Self Promotion":"FALSE"
+}
+]
