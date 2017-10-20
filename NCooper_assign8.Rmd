@@ -1,0 +1,135 @@
+---
+title: "DATA 605 HW8"
+author: "Nathan Cooper"
+date: "October 17, 2017"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## 7.11 Expected Time for Lightbulb to Fail.
+
+A company buys 100 light bulbs, 
+each of which has an exponential lifetime of
+1000 hours. What is the expected time for the first of these bulbs to burn
+out? (See Exercise 10.)
+
+Exercise 10 states that for n independent random variables with exponential density and mean $\mu$, the minimum value M is exponential density with mean $\frac{\mu}{n}$.
+
+In this case $\mu = 1000\space hours$ and $n = 100$ such that the expected value of M is $\frac{1000}{100} =10\space hours$ since the expected value of a random variable is the mean of that random variable.
+
+Note from last week's assignment that the minimum density for $X_1 ,X_2, ... X_n$ iid with pdf f(x) and cdf F(x) is given by:
+
+$$
+f_{1}(x) = nf(x)(1-F(x))^{n-1}
+$$
+
+In this case $\lambda = \frac{1}{\mu} = 0.001\space year^{-1}$ and $n = 100$.
+
+$$
+f(x) = \lambda e^{-\lambda x} \\
+F(x) = 1 - e^{-\lambda x} \\
+f_{1}(x) = n \lambda e^{-\lambda x} (1-[1-e^{-\lambda x}])^{n-1} \\
+f_{1}(x) = n \lambda e^{-\lambda x}(e^{-\lambda x})^{n-1} \\
+f_{1}(x) = n \lambda (e^{-\lambda x})^n \\
+f_{1}(x) = n \lambda e^{-n\lambda x}
+$$
+https://www2.stat.duke.edu/courses/Spring12/sta104.1/Lectures/Lec15.pdf
+
+Note that the density for the minimum is itself an exponential density with $\lambda^{\prime} = n\lambda = \frac{n}{\mu} = 1/\mu^\prime$ which is what Exercise 10 proved. 
+
+The expected value for an exponential density is $\mu$. In this case, $\mu = \frac{1000\space years}{100} = \bf{10\space years}$.
+
+## 7.14 Two Exponential Densities
+
+Assume that $X_1$ and $X_2$ are independent random variables, each having an exponential density with parameter $\lambda$. Show that $Z = X_1 - X_2$ has density $f(z) = (1/2)\lambda e^{-\lambda|z|}$.
+
+Both $X_1$ and $X_2$ are evaluated on the interval $0 \leq x < \infty$. Since $X_2$ is subtracted we can evaluate the convolution of $X_1$ and $X_2$ into two parts, $-\infty \rightarrow 0$ when $X_2 \geq X_1$ and $0 \rightarrow \infty$ when $X_1 \geq X_2$.
+
+For $X_2 \geq X_1$
+$$
+f_Z(z) = \int_{-\infty}^{\infty}f_{X_1}(z+x_2)f_{X_2}(x_2)dx_2 \\
+f_Z(z) = \int_{-\infty}^0\lambda e^{-\lambda (z+x_2)} \lambda e^{-\lambda x_2}dx_2 \\
+f_Z(z) = \int_{-\infty}^0\lambda e^{-\lambda (z)} \lambda e^{-2\lambda x_2}dx_2  \\
+f_Z(z) = \lambda^2 e^{-\lambda z}(\int_{-\infty}^0 e^{-2\lambda x_2}dx_2) \\
+f_Z(z) = \lambda^2 e^{-\lambda z}(\frac{ -1}{2\lambda}) \\
+f_Z(z) = \frac{-\lambda}{2} (e^{-\lambda z})
+$$
+
+
+For $X_1 \geq X_2$
+$$
+f_Z(z) = \int_{-\infty}^{\infty}f_{X_1}(z+x_2)f_{X_2}(x_2)dx_2 \\
+f_Z(z) = \int_0^{\infty}\lambda e^{-\lambda (z+x_2)} \lambda e^{-\lambda x_2}dx_2 \\
+f_Z(z) = \int_0^{\infty}\lambda e^{-\lambda (z)} \lambda e^{-2\lambda x_2}dx_2  \\
+f_Z(z) = \lambda^2 e^{-\lambda z}(\int_0^{\infty} e^{-2\lambda x_2}dx_2) \\
+f_Z(z) = \lambda^2 e^{-\lambda z}(\frac{ -1}{2\lambda}) \\
+f_Z(z) = \frac{\lambda}{2} (e^{-\lambda z})
+$$
+
+To combine:
+
+$$
+f(z) =
+\begin{cases}
+\frac{-\lambda}{2} (e^{-\lambda z}) & z < 0 \\
+\frac{\lambda}{2} (e^{-\lambda z}) & z \geq 0
+\end{cases}
+$$
+
+This can be rewritten: 
+$$
+f(z) = \frac{\lambda}{2} e^{-\lambda |z|}
+$$
+ 
+Because the negative sign will cancel out under the integral when integrating from $-\infty \rightarrow 0$.
+
+## 8.11 Chebyshev's Inequality
+
+Let X be a continuous random variable with mean $\mu = 10$ and variance $\sigma^2= 100/3$. Using Chebyshev's Inequality, find an upper bound for the following probabilities.
+
+$P(|X - \mu| \geq \epsilon) \leq \frac{\sigma^2}{\epsilon^2}$
+
+## (a) P (|X - 10| $\geq$ 2)
+
+Here $\epsilon = 2$ such that:
+
+$$
+P(|X - 10| \geq 2) \leq \frac{\frac{100}{3}}{2^2}\\
+P(|X - 10| \geq 2) \leq \frac{25}{3}
+$$
+
+## (b) P (|X - 10| $\geq$ 5)
+
+Here $\epsilon = 5$ such that:
+
+$$
+P(|X - 10| \geq 5) \leq \frac{\frac{100}{3}}{5^2}\\
+P(|X - 10| \geq 5) \leq \frac{4}{3}
+$$
+
+
+## (c) P (|X - 10| $\geq$ 9)
+
+Here $\epsilon = 9$ such that:
+
+$$
+P(|X - 10| \geq 9) \leq \frac{\frac{100}{3}}{9^2}\\
+P(|X - 10| \geq 9) \leq \frac{100}{243}
+$$
+
+## (d) P (|X - 10| $\geq$ 20)
+
+Here $\epsilon = 20$ such that:
+
+$$
+P(|X - 10| \geq 20) \leq \frac{\frac{100}{3}}{20^2}\\
+P(|X - 10| \geq 20) \leq \frac{100}{1200}
+$$
