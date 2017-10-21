@@ -1,0 +1,211 @@
+---
+title: "DATA 606 Project Proposal"
+author: "Nathan Cooper"
+date: "October 20, 2017"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding:  hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, eval=TRUE}
+suppressMessages(suppressWarnings(library(tidyr)))
+suppressMessages(suppressWarnings(library(dplyr)))
+suppressMessages(suppressWarnings(library(psych)))
+suppressMessages(suppressWarnings(library(stringr)))
+```
+
+### Data Preparation
+
+The data are sourced from 538's github page:
+
+```{r data_prep, eval=TRUE}
+
+# I pull the data directly from the website and organize it by Major
+#category for easier subsetting
+url1 <- "https://raw.githubusercontent.com/fivethirtyeight/data/master/college-majors/all-ages.csv"
+all_ages <- url1 %>% read.csv(stringsAsFactors = FALSE) %>% tbl_df() %>% arrange(Major_category)
+
+#Below I subset all the data by Major Category I only print 1 table
+#to make a cleaner presentation.
+all_ages_ag <- all_ages %>% filter(Major_category == "Agriculture & Natural Resources")
+head(all_ages_ag)
+
+all_ages_art <- all_ages %>% filter(Major_category == "Arts")
+
+all_ages_bio <- all_ages %>% filter(Major_category == "Biology & Life Science")
+
+all_ages_bsn <- all_ages %>% filter(Major_category == "Business")
+
+all_ages_cj <- all_ages %>% filter(Major_category == "Communications & Journalism")
+
+
+all_ages_com <- all_ages %>% filter(Major_category == "Computers & Mathematics")
+
+all_ages_ed <- all_ages %>% filter(Major_category == "Education")
+
+
+all_ages_eng <- all_ages %>% filter(Major_category == "Engineering")
+
+all_ages_hlt <- all_ages %>% filter(Major_category == "Health")
+
+all_ages_la <- all_ages %>% filter(Major_category == "Humanities & Liberal Arts" | Major_category == "Interdisciplinary")
+
+all_ages_ia <- all_ages %>% filter(Major_category == "Industrial Arts & Consumer Services")
+
+all_ages_law <- all_ages %>% filter(Major_category == "Law & Public Policy")
+
+all_ages_sci <- all_ages %>% filter(Major_category == "Physical Sciences")
+
+all_ages_psy <- all_ages %>% filter(Major_category == "Psychology & Social Work")
+
+all_ages_ssc <- all_ages %>% filter(Major_category == "Social Science")
+
+# I repeat the process for graduate students, again only printing
+#1 table
+url2 <- "https://raw.githubusercontent.com/fivethirtyeight/data/master/college-majors/grad-students.csv"
+grad_stdnt <- url2 %>% read.csv(stringsAsFactors = FALSE) %>% tbl_df() %>% arrange(Major_category)
+
+#Subsets
+grad_ag <- grad_stdnt %>% filter(Major_category == "Agriculture & Natural Resources")
+head(grad_ag)
+
+grad_art <- grad_stdnt %>% filter(Major_category == "Arts")
+
+grad_bio <- grad_stdnt %>% filter(Major_category == "Biology & Life Science")
+
+grad_bsn <- grad_stdnt %>% filter(Major_category == "Business")
+
+grad_cj <- grad_stdnt %>% filter(Major_category == "Communications & Journalism")
+
+grad_com <- grad_stdnt %>% filter(Major_category == "Computers & Mathematics")
+
+grad_ed <- grad_stdnt %>% filter(Major_category == "Education")
+
+grad_eng <- grad_stdnt %>% filter(Major_category == "Engineering")
+
+grad_hlt <- grad_stdnt %>% filter(Major_category == "Health")
+
+grad_la <- grad_stdnt %>% filter(Major_category == "Humanities & Liberal Arts" | Major_category == "Interdisciplinary")
+
+grad_ia <- grad_stdnt %>% filter(Major_category == "Industrial Arts & Consumer Services")
+
+grad_law <- grad_stdnt %>% filter(Major_category == "Law & Public Policy")
+
+grad_sci <- grad_stdnt %>% filter(Major_category == "Physical Sciences")
+
+grad_psy <- grad_stdnt %>% filter(Major_category == "Psychology & Social Work")
+
+grad_ssc <- grad_stdnt %>% filter(Major_category == "Social Science")
+
+
+
+#Repeat for only undergraduates 
+url3 <- "https://raw.githubusercontent.com/fivethirtyeight/data/master/college-majors/recent-grads.csv"
+rct_grad <- url3 %>% read.csv(stringsAsFactors = FALSE) %>% tbl_df() %>% arrange(Major_category)
+
+rct_ag <- rct_grad %>% filter(Major_category == "Agriculture & Natural Resources")
+head(rct_ag)
+
+rct_art <- rct_grad %>% filter(Major_category == "Arts")
+
+rct_bio <- rct_grad %>% filter(Major_category == "Biology & Life Science")
+
+rct_bsn <- rct_grad %>% filter(Major_category == "Business")
+
+rct_cj <- rct_grad %>% filter(Major_category == "Communications & Journalism")
+
+rct_com <- rct_grad %>% filter(Major_category == "Computers & Mathematics")
+
+rct_ed <- rct_grad %>% filter(Major_category == "Education")
+
+rct_eng <- rct_grad %>% filter(Major_category == "Engineering")
+
+rct_hlt <- rct_grad %>% filter(Major_category == "Health")
+
+rct_la <- rct_grad %>% filter(Major_category == "Humanities & Liberal Arts" | Major_category == "Interdisciplinary")
+
+rct_ia <- rct_grad %>% filter(Major_category == "Industrial Arts & Consumer Services")
+
+rct_law <- rct_grad %>% filter(Major_category == "Law & Public Policy")
+
+rct_sci <- rct_grad %>% filter(Major_category == "Physical Sciences")
+
+rct_psy <- rct_grad %>% filter(Major_category == "Psychology & Social Work")
+
+rct_ssc <- rct_grad %>% filter(Major_category == "Social Science")
+```
+
+### Research Question
+
+Which college majors offer the best opportunities in terms of unemployment rate and salary?
+
+### Cases
+
+#### All_ages
+
+Each case represents majors offered by colleges and universities in the US. There are 173 majors represented. These data include both undergrads and grad students.
+
+#### Grad Students
+
+Each case represents majors offered by colleges and universities in the US. There are 173 majors represented. These data include only grad students aged 25+ years.
+
+#### Recent Grads
+
+Each case represents majors offered by colleges and universities in the US. There are 173 majors represented. These data include only undergraduate students aged <28 years. These data also include gender statistics.
+
+#### Data Collection
+
+These Data were collated by the 538 website: http://www.fivethirtyeight.com and was posted to their github page: https://github.com/fivethirtyeight/data/tree/master/college-majors. They in turn used data from:
+
+ "All data is from American Community Survey 2010-2012 Public Use Microdata Series.
+
+Download data here: http://www.census.gov/programs-surveys/acs/data/pums.html
+
+Documentation here: http://www.census.gov/programs-surveys/acs/technical-documentation/pums.html
+
+Major categories are from Carnevale et al, "What's It Worth?: The Economic Value of College Majors." Georgetown University Center on Education and the Workforce, 2011. http://cew.georgetown.edu/whatsitworth"
+
+#### Type of Study
+
+This is an observational Study
+
+#### Response Variable
+
+The response variable are the college majors and are categorical.
+
+#### Explanatory Variables
+
+The explanatory variables are the counts of employed and unemployed college degree holders and the statistics of their income. These data are numerical.
+
+### Relavent Summary Statistics
+
+First we will look at overall unemployment rate for the 3 categories: all ages, recent grads, and grad students.
+```{r sum_stats, eval=TRUE}
+summary(all_ages$Unemployment_rate)
+summary(rct_grad$Unemployment_rate)
+summary(grad_stdnt$Grad_unemployment_rate)
+unempl <- cbind(all_ages$Unemployment_rate, rct_grad$Unemployment_rate, grad_stdnt$Grad_unemployment_rate)
+barplot(unempl/nrow(unempl), names.arg = c("All", "Recent Grad", "Grad Student"), xlab = "Unemployment Rate", col = rainbow(nrow(unempl)))
+```
+
+It appears that people holding only a Bachelor's degree have nearly twice as high median unemployment as those with higher degrees.
+
+We will also look at median income for the three categories.
+
+```{r med_inc, eval=TRUE}
+summary(all_ages$Median)
+hist(all_ages$Median, main = "Histogram for Median Income All Ages", xlab = "Median Income by Major All Ages (USD)", col = "dark blue")
+summary(rct_grad$Median)
+hist(rct_grad$Median, main = "Histogram for Median Income Recent Grads", xlab = "Median Income by Major Recent Grads (USD)", col = "dark blue")
+summary(grad_stdnt$Grad_median)
+hist(grad_stdnt$Grad_median, main = "Histogram for Median Income Grad Students", xlab = "Median Income by Major Grad Student (USD)", col = "dark blue")
+medsal <- cbind(all_ages$Median, rct_grad$Median, grad_stdnt$Grad_median)
+barplot(medsal/nrow(medsal), names.arg = c("All", "Recent Grad", "Grad Student"), xlab = "Median Salary", col = rainbow(nrow(medsal)))
+```
+
