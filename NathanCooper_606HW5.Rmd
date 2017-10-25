@@ -1,0 +1,236 @@
+---
+title: "DATA 606 HW5"
+author: "Nathan Cooper"
+date: "October 24, 2017"
+output:
+  pdf_document:
+    toc: yes
+  html_document:
+    code_folding: hide
+    toc: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries ,eval=TRUE}
+suppressMessages(suppressWarnings(library('DATA606')))
+```
+
+## 5.6 Working Backwards, Part II.
+
+A 90% confidence interval for a population mean is (65,
+77). The population distribution is approximately normal and the population standard deviation
+is unknown. This confidence interval is based on a simple random sample of 25 observations.
+Calculate the sample mean, the margin of error, and the sample standard deviation.
+
+### The Marigin of Error
+
+The margin of error (M) will be half of the difference of the confidence interval (CI):
+
+$$
+M = \frac{\Delta {CI}}{2} \\
+M = \frac{77 - 65}{2} \\
+M = 6
+$$
+
+### The Mean
+
+The mean, $\mu$, will be the number half way between the bounds of the CI. We calculate this by adding the margin of error to the lower bound of the CI:
+
+$$
+\mu = 65+6 \\
+\mu = 71
+$$
+
+### The Standard Deviation
+
+The Standard Deviation, $\sigma$, can be calculated from the margin of error, M, using a critical value of 1.64 due to it being a 90% confidence interval
+
+$$
+M = 1.64\frac{\sigma}{\sqrt{n}} \\
+\sigma = \frac{M\sqrt{n}}{1.64} \\
+\sigma = \frac{6*5}{1.64} \\
+\sigma = 18.2927
+$$
+
+## 5.14 SAT scores. 
+
+SAT scores of students at an Ivy League college are distributed with a
+standard deviation of 250 points. Two statistics students, Raina and Luke, want to estimate the average SAT score of students at this college as part of a class project. They want their margin of
+error to be no more than 25 points.
+
+(a) Raina wants to use a 90% confidence interval. How large a sample should she collect?
+
+$$
+M = 1.64\frac{\sigma}{\sqrt{n}} \\
+M = 25 \\
+\sigma = 250 \\
+n = [1.64\frac{\sigma}{M}]^2 \\
+n = [1.64\frac{250}{25}]^2 \\
+n = 268.96 = 269
+$$
+
+(b) Luke wants to use a 99% confidence interval. Without calculating the actual sample size, determine whether his sample should be larger or smaller than Raina's, and explain your reasoning.
+
+Sample size in this context is proportional to critical value squared. The critical value for a 99% CI is 2.576 which is larger than the critical value for a 90% CI, 1.64. 
+
+Therefore Luke will have a larger sample size.
+
+(c) Calculate the minimum required sample size for Luke.
+
+$$
+M = 2.576\frac{\sigma}{\sqrt{n}} \\
+M = 25 \\
+\sigma = 250 \\
+n = [2.576\frac{\sigma}{M}]^2 \\
+n = [2.576\frac{250}{25}]^2 \\
+n = 663.58 = 664
+$$
+
+## 5.20 High School and Beyond, Part I.
+
+The National Center of Education Statistics conducted a survey of high school seniors, collecting test data on reading, writing, and several other subjects. Here we examine a simple random sample of 200 students from this survey. Side-by-side box plots of reading and writing scores as well as a histogram of the differences in scores are shown below.
+
+### (a) 
+
+Is there a clear difference in the average reading and writing scores?
+
+No, the histogram of the difference of the reading minus writing score is centered on zero and is symmetrically distributed. Even though the median values of each score are slightly different, their boxplots overlap.
+
+### (b) 
+
+Are the reading and writing scores of each student independent of each other?
+
+Yes, these data were taken from a sample of 200 high school seniors in the US. According to https://nces.ed.gov/fastfacts/display.asp?id=372
+There are 15.1 million high school students in the US, approximately $1:4$ will be a senior, 3.8 million. 200 is well below the 10% cut off needed to establish independence. 
+
+### (c) 
+
+Create hypotheses appropriate for the following research question: is there an evident difference in the average scores of students in the reading and writing exam?
+
+$H_o$ is that there is no difference in the reading and writing scores of the population. $H_A$ is there is a difference in the reading and writing score of the population.
+
+### (d) 
+
+Check the conditions required to complete this test.
+
+The data are randomly selected and independent. Furthermore the distribution is nearly normal: unimodal, symmetric, and bell-shaped.
+
+### (e) 
+
+The average observed difference in scores is $x_{read-write} = -0.545$, and the standard deviation of the differences is 8.887 points. Do these data provide convincing evidence of a difference between the average scores on the two exams?
+
+The median scores for both tests are in the 50's according to the box plot. In that context the difference between the scores, -0.545, is close to zero. Additionally, the standard deviation is high compared to the difference, 8.887. This means that there are both positive and negative differences within 1 SD of the mean difference.
+The standard error in this case is $SE = \frac{\sigma}{\sqrt{n}} = \frac{8.887}{\sqrt{200}} = 0.628$. There are also positive and negative values within 1 standard error from the mean difference.
+
+This does not provide convincing evidence of a difference in the scores between the two exams. 
+
+### (f) 
+
+What type of error might we have made? Explain what the error means in the context of the application.
+
+These data lead us to accept the null hypothesis ($H_o$) that there is no difference between the two test score in the population. If $H_o$ is actually false, but we accept it as true, we have committed a Type II error. This is also called a False Negative, in that there is actually a difference in the population, but we failed to detect it.
+
+In this context there would actually be a difference in the two test scores, but we failed to see it. This in turn would prevent us from discovering the cause of the difference and to enact policy that would minimize the difference, i.e., elevate the lower mean test score so it matches the higher mean test score.
+
+### (g) 
+
+Based on the results of this hypothesis test, would you expect a confidence interval for the average difference between the reading and writing scores to include 0? Explain your reasoning.
+
+Since these data indicate no significant difference between the two score, I would expect that the confidence interval span 0. A confidence interval should capture the mean of the population, and if the mean of the population is 0, it should be within the confidence interval.
+
+## 5.32 Fuel efficiency of manual and automatic cars, Part I.
+
+Each year the US Environmental Protection Agency (EPA) releases fuel economy data on cars manufactured in that year. Below are summary statistics on fuel efficiency (in miles/gallon) from random samples of cars with manual and automatic transmissions manufactured in 2012. Do these data provide strong evidence of a difference between the average fuel efficiency of cars with manual and automatic transmissions in terms of their average city mileage? Assume that conditions for inference are satisfied.
+
+  Stats |Automatic | Manual
+ --|--------|-------
+Mean | 16.12 | 19.85
+SD | 3.58 | 4.51
+n | 26| 26
+
+The point estimate for the difference (manual - automatic) is $19.85 - 16.12 = 3.73 \space mpg$.
+
+The standard error:
+$$
+s = \sqrt{\frac{\sigma^2_m}{n_m}+\frac{\sigma^2_a}{n_a}} \\
+s = \sqrt{\frac{4.51^2}{26}+\frac{3.58^2}{26}} \\
+s = 1.129 \space mpg
+$$
+
+The critical value $t_{df}$ for 95% confidence and $df = 26 -1 = 25$, is $2.0595$
+
+using https://www.danielsoper.com/statcalc/calculator.aspx?id=10
+
+The confidence interval is $(x_m-x_a) \pm t_{df}*s$
+
+The lower bound is $3.73 - 2.0595*1.129 = 1.405 \space mpg$.
+
+The upper bound is $3.73 + 2.0595*1.129 = 6.055\space mpg$
+
+The confidence interval of (1.405, 6.055) mpg does not span zero. Therefore we reject the null hypothesis and accept the alternative hypothesis that there is a difference in gas mileage between the population of automatic and manual transmission cars.
+
+## 5.48 Work hours and education.
+
+The General Social Survey collects data on demographics,
+education, and work, among many other characteristics of US residents.
+Using ANOVA, we can consider educational attainment levels for all 1,172 respondents at once. Below are the distributions of hours worked by educational attainment and relevant summary statistics that will be helpful in
+carrying out this analysis.
+
+Stats|< HS|HS|Jr Coll|Bach|Grad
+--|--|--|--|--|--|
+Mean|38.67|39.6|41.39|42.55|40.85
+SD|15.81|14.97|18.1|13.62|15.51
+n|121|546|97|253|155
+
+
+### (a) 
+
+Write hypotheses for evaluating whether the average number of hours worked varies across the five groups.
+
+$H_o$: the difference in the mean number of hours worked across populations is 0.
+$H_A$: the difference in the mean number of hours worked across populations is not 0.
+
+### (b) 
+
+Check conditions and describe any assumptions you must make to proceed with the test.
+
+From the text:
+*the observations are independent within and across groups
+
+Given that there are about 350 million residents within the US the sample sizes (97 to 253) are small enough to assume this is true.
+
+*the data within each group are nearly normal,
+
+With the possible exception of the Bachelor's Degree sample, which seems left skewed, this is true judging from the boxplots.
+
+*the variability across the groups is about equal.
+
+Again from the box plots, the IQRs and Whiskers of each plot look very similar, with the possible exception of the Bachelor's Degree's sample which is a little narrower. 
+
+We will assume that the slight variations of the Bachelor's Degree sample is not large enough to invalidate the ANOVA test.
+
+### (c) 
+
+Below is part of the output associated with this test. Fill in the empty cells.
+
+http://statpages.info/anova1sm.html
+
+...|Df  |Sum Sq |Mean Sq| F value 
+---|----|-------|-------|---------
+degree| 4| 2004| 501.54| 2.1868 
+Residuals| 1167 |267,374| 229.11
+Total |1171| 269,377
+
+Pr(>F) = 0.0684
+
+Note some of the pre-printed cells varied slightly from the website I used. Most likely this was due to rounding error.
+
+### (d) 
+
+What is the conclusion of the test?
+
+Since the P value is 0.0684 this is too high to reject the null hypothesis at the 0.05 significance level. We must accept the null hypothesis that the mean study hours for each population are the same. 
