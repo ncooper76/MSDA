@@ -1,0 +1,95 @@
+---
+title: "DATA 605 HW9"
+author: "Nathan Cooper"
+date: "October 25, 2017"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library('DATA606')
+```
+
+## pg. 363 Ex. 11
+
+The price of one share of stock in the Pilsdorff Beer Company (see Exercise 8.2.12) is given by $Y_n$ on the $n^{th}$ day of the year. Finn observes that the differences $X_n = Y_{n+1} - Y_n$
+appear to be independent random variables
+with a common distribution having mean $\mu = 0$ and variance $\sigma^2= \frac{1}{4}$. If $Y_1 = 100$, estimate the probability that $Y_{365}$ is
+
+Note that $E(x) = \mu = 0$,  $\sigma = \frac{1}{2}$, $n = 364$.
+
+This can be modeled as a Gaussian random walk of 364 steps. The probability distribution is given by the normal curve: $N(100, n\sigma^2) = N(100,91)$,  since the starting point of the price is 100 USD.
+
+We can use pnorm to calculate the probabilities.
+
+### (a) $\le$ 100.
+
+```{r 100, eval=TRUE}
+1 - pnorm(100,100,91)
+normalPlot(100,91,c(100,Inf))
+```
+
+There is a 50% chance the stock price will equal or exceed it's starting value of \$100 after a year.
+
+### (b) $\le$ 110.
+
+```{r 110, eval=TRUE}
+1 - pnorm(110,100,91)
+normalPlot(100,91,c(110,Inf))
+```
+
+There is a 45.6% chance that the stock price will increase to \$110 or more after a year..
+
+### (c) $\le$ 120.
+
+```{r 120, eval=TRUE}
+1 - pnorm(120,100,91)
+normalPlot(100,91,c(120,Inf))
+```
+
+There is a 41.3% chance that the stock price will increase to \$120 or more after a year.
+
+## Binomial Distribution - Moment Generating Function
+
+Following example 10.2 in the text:
+
+$$
+g(t) = \sum_{j=0}^n e^{tj} {{n}\choose{j}}p^jq^{n-j} \\
+g(t) = \sum_{j=0}^n {{n}\choose{j}}(pe^t)^jq^{n-j} \\
+g(t) = (pe^t+q)^n \\
+g'(t) = n(pe^t+q)^{n-1}pe^t \\
+g''(t) = n(n-1)(pe^t+q)(pe^t)^2 + n(pe^t+q)^npe^t \\
+g'(0) = n(p+q)^{n-1}p =np \\
+g''(0) = n(n-1)(p+q)^{n-1}p^2 + n(p+q)^np \\
+g''(0) = n(n-1)p^2 + np \\
+\boxed{\mu = \mu_1 = g'(0) = np} \\
+\sigma^2 = \mu_2-\mu_1^2 = g''(0) - g'(0)^2 \\
+\sigma^2 = n(n-1)p^2 + np - (np)^2 \\
+\sigma^2 = np[(n-1)p +1 -np] \\
+\sigma^2 = np[(np-p) +1 -np] \\
+\boxed{\sigma^2 = np[1-p]}
+$$
+Note that since $q = 1 - p$, $p + q = 1$.
+
+## Exponential Distribution - Moment Generating Function
+
+Starting from the text Example 10.16:
+
+$$
+g(t) = \int_0^\infty e^{tx}\lambda e^{-\lambda x} dx \\
+g(t) = \frac{\lambda e^{(t-\lambda )x}}{t -\lambda}|_0^{\infty} \\
+g(t) = \frac{\lambda}{\lambda-t} \\
+g'(t) = \frac{\lambda}{(\lambda-t)^2} \\
+g'(0) = \frac{\lambda}{\lambda^2} = \frac{1}{\lambda} \\
+g''(t) = \frac{2\lambda}{(\lambda-t)^3} \\
+g''(0) =  \frac{2\lambda}{\lambda^3} = \frac{2}{\lambda^2}
+$$
+
+As above: $\mu = g'(0) = \lambda^{-1}$ as expected
+
+$\sigma^2 = g''(0) - g'(0)^2 = \frac{2}{\lambda^2} - \frac{1}{\lambda^2} = \lambda^{-2}$, as expected
+
