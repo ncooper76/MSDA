@@ -22,7 +22,7 @@ suppressMessages(suppressWarnings(library('jsonlite')))
 
 I put my key into a line of code that is not included on the printout.
 ```{r, key ,eval=TRUE, include=FALSE}
-key <- "b74f5ed70f7242debda9650fd796a1ea"
+key <- "*****************************"
 ```
 
 
