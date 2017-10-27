@@ -30,8 +30,8 @@ I selected the API for the most veiwed Science articles from the last day, you c
 
 ```{r, get, eval=TRUE}
 nyt_url <- 'https://api.nytimes.com/svc/mostpopular/v2/mostviewed/Science/1.json' # the url following the NYT's instructions.
-nyt_mp <- nyt_url %>% GET(add_headers('api-key'=key)) # The key is in a hidden line of code.
-nyt_mp <- nyt_mp %>% content(as='text') %>% fromJSON(simplifyDataFrame = TRUE) ## reading as text here turned out to be the easiest route since
+nyt_mp <- nyt_url %>% GET(add_headers('api-key'=key)) %>% content(as='text') %>% fromJSON(simplifyDataFrame = TRUE) # The key is in a hidden line of code.
+# reading as text here turned out to be the easiest route since
 # fromJSON() will automatically put the json file into a dataframe when 'simplifyDataFrame = TRUE'.
 nyt_mp_df <- nyt_mp$results
 head(nyt_mp_df)
