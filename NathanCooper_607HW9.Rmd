@@ -1,0 +1,38 @@
+---
+title: "DATA 607 HW9"
+author: "Nathan Cooper"
+date: "October 27, 2017"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, eval=TRUE}
+suppressMessages(suppressWarnings(library('tidyverse')))
+suppressMessages(suppressWarnings(library('httr')))
+suppressMessages(suppressWarnings(library('jsonlite')))
+```
+
+## Accessing NYT API
+
+I put my key into a line of code that is not included on the printout.
+```{r, key ,eval=TRUE, include=FALSE}
+key <- "b74f5ed70f7242debda9650fd796a1ea"
+```
+
+
+I selected the API for the most veiwed Science articles from the last day, you can see that refelected in the url: "/mostviewed/Science/1.json" as the '1' before the josn file extension denotes number of days. NYT gave the option of 1, 7, or 30. I chose 1 because the emphasis was extracting the data from the API and putting the data in the json into a dataframe, not neccessarily a large data frame.
+
+```{r, get, eval=TRUE}
+nyt_url <- 'https://api.nytimes.com/svc/mostpopular/v2/mostviewed/Science/1.json' # the url following the NYT's instructions.
+nyt_mp <- nyt_url %>% GET(add_headers('api-key'=key)) # The key is in a hidden line of code.
+nyt_mp <- nyt_mp %>% content(as='text') %>% fromJSON(simplifyDataFrame = TRUE) ## reading as text here turned out to be the easiest route since
+# fromJSON() will automatically put the json file into a dataframe when 'simplifyDataFrame = TRUE'.
+nyt_mp_df <- nyt_mp$results
+head(nyt_mp_df)
+```
