@@ -1,0 +1,153 @@
+---
+title: "DATA 605 HW10"
+author: "Nathan Cooper"
+date: "October 31, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Gambler's Ruin
+
+Smith is in jail and has 1 dollar; he can get out on bail if he has 8 dollars.
+A guard agrees to make a series of bets with him. If Smith bets A dollars,
+he wins A dollars with probability .4 and loses A dollars with probability .6.
+Find the probability that he wins 8 dollars before losing all of his money if
+
+(a) $\textbf{He bets 1 dollar each time (timid strategy).}$
+
+From Section 12.2 in the text:
+
+$$
+q = 0.6\\
+p = 0.4 \\
+s = 1 \\
+M = 8 \\
+\frac{q}{p} = \frac{0.6}{0.4} = 1.5
+$$
+
+$$
+P = \frac{1-(\frac{q}{p})^s}{1-(\frac{q}{p})^M} \\
+P = \frac{1-1.5^{1}}{1-1.5^{8}}
+$$
+
+Using R to calculate:
+```{r gambler1, eval=TRUE}
+(1.5^1-1)/(1.5^8-1)
+```
+
+By simulation:
+
+```{r timid-sim, eval=TRUE}
+win = 0
+lose = 0
+cap = 8 #money prisoner needes to escape
+for(game in 1:100000){
+  purse = 1 #reset the initial purse for a new game
+  while(purse < cap & purse > 0){ #end conditions
+    roll = runif(1) #roll the dice
+    if(roll < 0.4){#victory condition
+      purse = purse + 1
+    }#if
+    else{
+      purse  = purse - 1
+    }#else
+    if(purse == 8){ #increment win counter when $8 is reached
+      win = win +1
+    }#if2
+    if(purse == 0){ #increment lose counter when $0 is reached
+      lose = lose +1
+    }#if3
+  }#while
+}#for
+win/lose #ratio of wins to loses should be close 0.0203
+```
+
+There is a little over a 2% chance the prisoner will win these bets, with this strategy.
+
+(b) $\textbf{He bets, each time, as much as possible but not more than necessary to
+bring his fortune up to 8 dollars (bold strategy).}$
+
+Since the prisoner bets A dollars and will lose or gain A dollars, and he bets his entire purse each time (up to 8) he must win each time or go broke and lose. If he does win his purse will follow the following sequence: 1,2,4,8. He starts with 1 dollar and must win 3 bets in a row at $p = 0.4$. This can be solved with a Binomial Distribution.
+
+```{r, gambler_bold, eval=TRUE}
+dbinom(3,3,0.4) 
+0.4^3 # The chance of all successes is p^n.
+```
+
+By a Markov Chain 1 dollar is a ephemeral state because we can only leave there to either 0 or 2. Likewise, 2 is ephemeral because we go to 0 or 4. 4 is also ephemeral because we can only go to 0 or 8. 0 and 8 are absorbing states as they both terminate the game. 
+
+The columns and rows represent the transitions between 0,1,2,4,and 8 dollars.
+
+$$
+\begin{bmatrix}
+1 & 0 & 0 & 0 & 0 \\
+0.6 & 0 & 0.4 & 0 & 0\\
+0.6 & 0 & 0 & 0.4 & 0\\
+0.6 & 0 & 0 & 0 & 0.4\\
+0 & 0 & 0 & 0 & 1
+\end{bmatrix}
+$$
+
+This matrix represents a 0.4 chance of going up to the next level or a 0.6 chance of dropping to zero at each step. Once you get to 0 or 8 you are stuck there.
+
+Our initial state is:
+
+$$
+\pi^{(0)} = 
+\begin{bmatrix}
+0 & 1 & 0 & 0 &0
+\end{bmatrix}
+$$
+
+We can now use R to evolve this system:
+
+```{r markov, eval=TRUE}
+markov <- matrix(c(1,0,0,0,0,0.6,0,0.4,0,0,0.6,0,0,0.4,0,0.6,0,0,0,0.4,0,0,0,0,1), ncol=5,nrow=5, byrow = TRUE)
+markov
+pi <- matrix(c(0,1,0,0,0), ncol=5,nrow = 1,byrow = TRUE)
+pi
+pi_1 <- pi%*%markov
+pi_1
+pi_2 <- pi_1%*%markov
+pi_2
+pi_3 <- pi_2%*%markov
+pi_3 #This should be our end point and equal to the Binomial Case
+pi_4 <- pi_3%*%markov
+pi_4 # As suspected no change from pi_3
+```
+
+The Markov Chain method agrees with the Binominal method as suspected.
+
+```{r bold-sim, eval=TRUE}
+win = 0
+lose = 0
+cap = 8 #money prisoner needes to escape
+for(game in 1:100000){
+  purse = 1 #reset the initial purse for a new game
+  while(purse < cap & purse > 0){ #end conditions
+    roll = runif(1) #roll the dice
+    if(roll < 0.4){#victory condition
+      purse = purse + purse #all
+    }#if
+    else{
+      purse  = purse - purse #or nothing
+    }#else
+    if(purse == 8){ #increment win counter when $8 is reached
+      win = win +1
+    }#if2
+    if(purse == 0){ #increment lose counter when $0 is reached
+      lose = lose +1
+    }#if3
+  }#while
+}#for
+win/lose #ratio of wins to loses should be close 0.064
+```
+
+The output of the simulation should be close to 0.064 as shown by the Binomial case and the Markov Chain case.
+
+(c) $\textbf{Which strategy gives Smith the better chance of getting out of jail?}$
+
+He more than triples his probability of winning if he uses the bold strategy. Although the timid strategy does give him the ability to lose bets, the probabilities are skewed such that he will not win enough 1 dollar at a time to win over all as compared to winning 3 times in a row.
