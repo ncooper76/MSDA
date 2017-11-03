@@ -1,0 +1,143 @@
+---
+title: "DATA 607 Project 4"
+author: "Nathan Cooper"
+date: "November 1, 2017"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Project Goals
+
+Our task is to create a program that can classify a text document using training documents that are already classified. Specifically we will make a program that will classify email as 'spam' - unwanted email, or 'ham' wanted email.
+
+To that end will will set up the necessary libraries.
+
+```{r libraries, eval=TRUE}
+suppressMessages(suppressWarnings(library("tm")))
+suppressMessages(suppressWarnings(library("RTextTools")))
+suppressMessages(suppressWarnings(library("tidyverse")))
+suppressMessages(suppressWarnings(library("stringr")))
+suppressMessages(suppressWarnings(library("ggplot2")))
+suppressMessages(suppressWarnings(library("SnowballC")))
+suppressMessages(suppressWarnings(library("wordcloud")))
+```
+
+## The Data
+
+We retrieved files of spam and ham emails from http://spamassassin.apache.org/old/publiccorpus/
+specifically 20050311_spam_2.tar.bz2 and 20030228_easy_ham.tar.bz2
+
+These were unpacked into the following directories.
+
+```{r dir, eval=TRUE}
+spam_dir <- 'C:\\Users\\Nate\\Documents\\DataSet\\spam_2\\'
+ham_dir <- 'C:\\Users\\Nate\\Documents\\DataSet\\easy_ham\\'
+```
+
+We then need to create text Corpuses from the files.
+
+```{r corp, eval=TRUE}
+spam <- spam_dir %>% DirSource() %>% Corpus()
+meta(spam,"comment", type = "corpus") <- "Spam"
+ham <- ham_dir %>% DirSource() %>% Corpus()
+meta(ham,"comment", type = "corpus") <- "Ham"
+meta(spam, "Label") <- 1
+meta(ham, "Label") <- 0
+ham[[1]] %>% as.character() %>% writeLines()
+spam[[1]] %>% as.character() %>% writeLines()
+```
+
+##Document Term Matrices
+
+Document Term  Matrices are useful in applying statistical methods to text documents. We can use the tm library to create TMD form the ham and spam Corpuses.
+
+```{r tdm, eval=TRUE}
+spam_dtm <- spam %>% DocumentTermMatrix()
+spam_dtm
+ham_dtm <- ham %>% DocumentTermMatrix()
+ham_dtm
+```
+
+Maximal term lengths seem unreasonably large. We can use the tm package to tidy the data.
+
+```{r, tm_tidy, eval=TRUE}
+spam <- spam %>% tm_map(PlainTextDocument)
+spam <- spam %>% tm_map(str_replace_all, pattern = "[[:punct:]]", replacement = " ")
+spam <- spam %>% tm_map(tolower)
+spam <- spam %>% tm_map(removeNumbers)
+spam <- spam %>% tm_map(removeWords, stopwords('english'))
+spam <- spam %>% tm_map(stemDocument,  language = 'english') #Stemming seems to truncate words
+spam[[1]] %>% as.character() %>% writeLines()
+spam_dtm <- spam %>% DocumentTermMatrix()
+spam_dtm <- spam_dtm %>% removeSparseTerms(1-(10/length(spam))) #We get rid of terms used in fewer than 10 documents
+spam_dtm
+# We repeat the data cleaning with the ham emails.
+ham <- ham %>% tm_map(PlainTextDocument)
+ham <- ham %>% tm_map(str_replace_all, pattern = "[[:punct:]]", replacement = " ")
+ham <- ham %>% tm_map(tolower)
+ham <- ham %>% tm_map(removeNumbers)
+#spamassassin is the top word in the ham Corpus. I opted to remove it for a more rigorous spam filter.
+ham <- ham %>% tm_map(removeWords, c('spamassassin',stopwords('english')))
+ham <- ham %>% tm_map(stemDocument,  language = 'english')
+ham[[1]] %>% as.character() %>% writeLines()
+ham_dtm <- ham %>% DocumentTermMatrix()
+ham_dtm <- ham_dtm %>% removeSparseTerms(1-(10/length(ham))) #We get rid of terms used in fewer than 10 documents
+ham_dtm
+```
+
+N.B., term counts went from 60,901 and 55,640 to 2663 and 3422. Also Sparsity dropped from 100% (rounded) in both DTMs to 94% and 96%. This should help the algorithms that we are about to use to run more efficiently in terms of computer resources.
+
+### Summary Statistics of the DTMs
+
+It is good practice to explore the Corpus using the TDMs once they have been initialized. To that end, we can create bar plots of the most frequently used terms in both Corpuses.
+
+```{r sum_tdm, eval=TRUE}
+spam_freq <-  spam_dtm %>% as.matrix() %>% colSums()
+length(spam_freq) #Should be the same as term count, not document count.
+spam_freq_ord <- spam_freq %>% order(decreasing = TRUE)
+#spam_freq_ord is a vector of the indicies of spam_freq in order of highest word count to lowest.
+par(las=1)
+#This will create a bar plot of the top 10 words in the spam Corpus
+barplot(spam_freq[spam_freq_ord[1:10]], horiz = TRUE,col=rainbow(10))
+ham_freq <-  ham_dtm %>% as.matrix() %>% colSums()
+length(ham_freq) #Should be the same as term count, not document count.
+ham_freq_ord <- ham_freq %>% order(decreasing = TRUE)
+#ham_freq_ord is a vector of the indicies of ham_freq in order of highest word count to lowest.
+par(las=1)
+#This will create a bar plot of the top 10 words in the ham Corpus
+barplot(ham_freq[ham_freq_ord[1:10]], horiz = TRUE,col=rainbow(10),cex.names=0.7)
+
+```
+
+The top word in the ham list was 'spamassassin'. This suggests that these emails have already passed through a spam filter. In creating a spam filter of our own, it seems more rigorous to do so without that word. I opted to remove it in the line of code in the previous block.
+
+We do see a difference in the top words in the Spam DTM vs. the Ham DTM. We can use this as the basis of our spam filter.
+
+
+## Document Analysis
+
+First we combine our TDMs for use in the RTextTools functions.
+```{r combine, eval=TRUE}
+ham_spam <- c(ham,spam ,recursive=FALSE)
+
+dtm <- c(spam_dtm, ham_dtm)
+```
+
+Now we create the container for the RText Tools.
+```{r cont,eval=TRUE}
+N <- length(con_labels)
+container <- create_container(dtm, labels = con_labels, trainSize = 1:501,testSize = 502:N,virgin = TRUE)
+```
+
+
+
+
+
+
