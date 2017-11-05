@@ -24,7 +24,6 @@ suppressMessages(suppressWarnings(library("tm")))
 suppressMessages(suppressWarnings(library("RTextTools")))
 suppressMessages(suppressWarnings(library("tidyverse")))
 suppressMessages(suppressWarnings(library("stringr")))
-suppressMessages(suppressWarnings(library("ggplot2")))
 suppressMessages(suppressWarnings(library("SnowballC")))
 suppressMessages(suppressWarnings(library("wordcloud")))
 ```
@@ -41,17 +40,42 @@ spam_dir <- 'C:\\Users\\Nate\\Documents\\DataSet\\spam_2\\'
 ham_dir <- 'C:\\Users\\Nate\\Documents\\DataSet\\easy_ham\\'
 ```
 
-We then need to create text Corpuses from the files.
+We then need to create text Corpuses from the files. The 'for' loops are needed to classify each individual document as ham or spam. The tidying procedures are similar to those found in the course text. VCorpus seems to perform better with the content_transformer() function wrapped around the tm_map variables.
 
 ```{r corp, eval=TRUE}
-spam <- spam_dir %>% DirSource() %>% Corpus()
-meta(spam,"comment", type = "corpus") <- "Spam"
-ham <- ham_dir %>% DirSource() %>% Corpus()
-meta(ham,"comment", type = "corpus") <- "Ham"
-meta(spam, "Label") <- 1
-meta(ham, "Label") <- 0
-ham[[1]] %>% as.character() %>% writeLines()
-spam[[1]] %>% as.character() %>% writeLines()
+spam <- spam_dir %>% DirSource() %>% VCorpus()
+ham <- ham_dir %>% DirSource() %>% VCorpus()
+meta(spam[[1]])
+meta(ham[[1]])
+#Now we can tidy our Corpuses
+spam <- spam %>% tm_map(content_transformer(PlainTextDocument))
+spam <- spam %>% tm_map(content_transformer(removePunctuation))
+spam <- spam %>% tm_map(content_transformer(tolower))
+spam <- spam %>% tm_map(content_transformer(removeNumbers))
+spam <- spam %>% tm_map(content_transformer(stemDocument),  language = 'english') #Stemming seems to truncate words
+spam <- spam %>% tm_map(removeWords, c('receiv', stopwords('english')))
+ham <- ham %>% tm_map(content_transformer(PlainTextDocument))
+ham <- ham %>% tm_map(content_transformer(removePunctuation))
+ham <- ham %>% tm_map(content_transformer(tolower))
+ham <- ham %>% tm_map(content_transformer(removeNumbers))
+ham <- ham %>% tm_map(content_transformer(stemDocument),  language = 'english') #Stemming seems to truncate words
+ham <- ham %>% tm_map(removeWords, c('receiv', 'spamassassin', stopwords('english')))
+ham_spam <- c(ham,spam)
+#This loop places a meta data label on all documents as ham or spam, the c() function puts the two Corpuses back to Back
+#So we can use their lengths to index the loops.
+for(i in 1:length(ham)){
+  meta(ham_spam[[i]],"classification") <- "Ham"
+}
+for(i in (length(ham)+1):(length(spam)+length(ham))){
+  meta(ham_spam[[i]],"classification") <- "Spam"
+}
+for(i in 1:5){
+  ham_spam <- sample(ham_spam)
+}# This scramble the corpus so it is not all Ham then all Spam
+meta(ham_spam[[127]])
+# You can un comment the lines below to read individual emails.
+#ham[[1]] %>% as.character() %>% writeLines()
+#spam[[1]] %>% as.character() %>% writeLines()
 ```
 
 ##Document Term Matrices
@@ -60,43 +84,21 @@ Document Term  Matrices are useful in applying statistical methods to text docum
 
 ```{r tdm, eval=TRUE}
 spam_dtm <- spam %>% DocumentTermMatrix()
+spam_dtm <- spam_dtm %>% removeSparseTerms(1-(10/length(spam)))
 spam_dtm
 ham_dtm <- ham %>% DocumentTermMatrix()
+ham_dtm <- ham_dtm %>% removeSparseTerms(1-(10/length(ham)))
 ham_dtm
+ham_spam_dtm <- ham_spam %>% DocumentTermMatrix()
+ham_spam_dtm <- ham_spam_dtm %>% removeSparseTerms(1-(10/length(ham_spam)))
+ham_spam_dtm
 ```
 
-Maximal term lengths seem unreasonably large. We can use the tm package to tidy the data.
-
-```{r, tm_tidy, eval=TRUE}
-spam <- spam %>% tm_map(PlainTextDocument)
-spam <- spam %>% tm_map(str_replace_all, pattern = "[[:punct:]]", replacement = " ")
-spam <- spam %>% tm_map(tolower)
-spam <- spam %>% tm_map(removeNumbers)
-spam <- spam %>% tm_map(removeWords, stopwords('english'))
-spam <- spam %>% tm_map(stemDocument,  language = 'english') #Stemming seems to truncate words
-spam[[1]] %>% as.character() %>% writeLines()
-spam_dtm <- spam %>% DocumentTermMatrix()
-spam_dtm <- spam_dtm %>% removeSparseTerms(1-(10/length(spam))) #We get rid of terms used in fewer than 10 documents
-spam_dtm
-# We repeat the data cleaning with the ham emails.
-ham <- ham %>% tm_map(PlainTextDocument)
-ham <- ham %>% tm_map(str_replace_all, pattern = "[[:punct:]]", replacement = " ")
-ham <- ham %>% tm_map(tolower)
-ham <- ham %>% tm_map(removeNumbers)
-#spamassassin is the top word in the ham Corpus. I opted to remove it for a more rigorous spam filter.
-ham <- ham %>% tm_map(removeWords, c('spamassassin',stopwords('english')))
-ham <- ham %>% tm_map(stemDocument,  language = 'english')
-ham[[1]] %>% as.character() %>% writeLines()
-ham_dtm <- ham %>% DocumentTermMatrix()
-ham_dtm <- ham_dtm %>% removeSparseTerms(1-(10/length(ham))) #We get rid of terms used in fewer than 10 documents
-ham_dtm
-```
-
-N.B., term counts went from 60,901 and 55,640 to 2663 and 3422. Also Sparsity dropped from 100% (rounded) in both DTMs to 94% and 96%. This should help the algorithms that we are about to use to run more efficiently in terms of computer resources.
+N.B., term counts went from ~60,901 and ~55,640 to ~2817 and ~3506. Also Sparsity dropped from 100% (rounded) in both DTMs to 95% and 97%. This should help the algorithms that we are about to use to run more efficiently in terms of computer resources. I removed the DTM lines that made DTMs from untidied Corpuses to improve the performance of the program. 
 
 ### Summary Statistics of the DTMs
 
-It is good practice to explore the Corpus using the TDMs once they have been initialized. To that end, we can create bar plots of the most frequently used terms in both Corpuses.
+It is good practice to explore the Corpus using the DTMs once they have been initialized. To that end, we can create bar plots of the most frequently used terms in both Corpuses, and some word clouds to get a more intuitive feel for how the Document Classes differ.
 
 ```{r sum_tdm, eval=TRUE}
 spam_freq <-  spam_dtm %>% as.matrix() %>% colSums()
@@ -113,28 +115,86 @@ ham_freq_ord <- ham_freq %>% order(decreasing = TRUE)
 par(las=1)
 #This will create a bar plot of the top 10 words in the ham Corpus
 barplot(ham_freq[ham_freq_ord[1:10]], horiz = TRUE,col=rainbow(10),cex.names=0.7)
-
+#Spam Cloud
+wordcloud(spam, max.words = 100, random.order = FALSE, random.color = TRUE,colors=palette())
+#Ham Cloud
+wordcloud(ham, max.words = 100, random.order = FALSE, random.color = TRUE,colors=palette())
 ```
 
-The top word in the ham list was 'spamassassin'. This suggests that these emails have already passed through a spam filter. In creating a spam filter of our own, it seems more rigorous to do so without that word. I opted to remove it in the line of code in the previous block.
+Initially, the top word on both lists was the root, "receiv". I decided to remove that word as in does not contain much information for written communication. It appeared a lot in the headers of the emails before the actual messages. I removed it from both lists in order to improve the effectiveness of the filter. Afterwards, the top word in the ham list was 'spamassassin'. This suggests that these emails have already passed through a spam filter. In creating a spam filter of my own, it seems more rigorous to do so without that word. I opted to remove it in the line of code in the previous block.
 
 We do see a difference in the top words in the Spam DTM vs. the Ham DTM. We can use this as the basis of our spam filter.
 
 
 ## Document Analysis
 
-First we combine our TDMs for use in the RTextTools functions.
-```{r combine, eval=TRUE}
-ham_spam <- c(ham,spam ,recursive=FALSE)
+First, we create the container for the RText Tools. Before I removed the root "reciev" which was the top word in both the ham and spam corpuses, the spam filters were about 59% to 64% accurate. I went back to the code to tidy the data and removed 'receiv' from both corpuses. After I did that the accuracy of the Spam filter jumped to 99% with a training set of 2001! I then reduced the training set size to see if I could get similar performance with less in the training set.
 
-dtm <- c(spam_dtm, ham_dtm)
-```
+A training set of 501 gives about 96% to 99% accuracy, so that seems like a good trade off. We need to begin by creating a container of the data that needs to be input into the models: the dtm, the vector of classifications and the size of the training and test sets. The 'virgin' input is set to false because as that signifies that the data in the test set and training set have corresponding labels.
 
-Now we create the container for the RText Tools.
 ```{r cont,eval=TRUE}
-N <- length(con_labels)
-container <- create_container(dtm, labels = con_labels, trainSize = 1:501,testSize = 502:N,virgin = TRUE)
+# The code below comes from the text Automated Data Collection in R.
+lbls <- as.vector(unlist(meta(ham_spam, type="local", tag = "classification")))
+head(lbls)
+N <- length(lbls)
+container <- create_container(ham_spam_dtm, labels = lbls, trainSize = 1:501,testSize = 502:N,virgin = TRUE)
 ```
+
+
+### Support Vector Machine
+
+Now we will use the Support Vector Machine supervised learning model to classify emails in the test set as ham or spam. This technique works by classifying each document as a position vector and it looks for a plane through the phase space that creates the largest distance between the two classes in the training set, here 'spam' emails and 'ham' emails. It then classifies each document in the test set by it's position relative to the plane of separation.
+
+```{r svm, eval=TRUE}
+svm_model <- train_model(container, "SVM")
+svm_result <- classify_model(container,svm_model)
+head(svm_result)
+prop.table(table(svm_result[,1] == lbls[502:N]))
+```
+
+The SVM model gives greater than 99% accuracy, which is outstanding. 
+
+### Random Forest
+
+Next we will use the Random Forest model. The random forest technique by creating multiply decision trees using the training set. It then assigns the data in the test set a classification that is composed of the mode of the results of each individual decision tree. In this model it assigns a probability of the classification based on goodness of fit to individual tree.
+
+```{r tree, eval=TRUE}
+tree_model <- train_model(container, "TREE")
+tree_result <- classify_model(container, tree_model)
+head(tree_result)
+prop.table(table(tree_result[,1] == lbls[502:N]))
+```
+
+We get 96% accuracy with the Random Forest, which is excellent. 
+
+### Maximum Entropy
+
+Finally we will use the Maximum Entropy model. This model starts with an assumption that the properties in a population are Normally distributed with a known mean and standard deviation. Max Entropy builds these distributions with the training set. It then assigns a classification with each item in the test set based on which distribution it deviates from the least.
+
+```{r maxent,eval=TRUE}
+maxent_model <- train_model(container, "MAXENT")
+max_result <- classify_model(container, maxent_model)
+head(max_result)
+prop.table(table(max_result[,1] == lbls[502:N]))
+```
+
+Similar to the SVM we get greater than 99% with Max Entropy.
+
+
+
+## Annotated Refenences
+
+* Munzert, Rubba, Mei$\beta$ner, and Nyhuis; Automated Data Collection with R.
+
+This was very new territory for me, so I leaned heavily on the class text for guidance. I had to use the sources below for the updated syntax.
+
+* http://rstudio-pubs-static.s3.amazonaws.com/267737_ab2d8a0b1a9a4792acd8f43c0c85561d.html
+
+This is a previous student's (Joel Park) project for this course. Which I found googling other sources. I was stuck in how to label and extract the meta data, this student was using an approach similar to mine, in that they seemed to be using the online videos and text book as a template, as I did. What I learned from this source was to use a VCorpus instead of a simple Corpus. When merging corpuses, c() for a Simple Corpus makes a list, which causes the documentTermMatrix() to fail. Whereas for a VCorpus, c() makes a new VCorpus. Also, I learned how to use the meta() syntax properly, initially I was making a scope error in that my meta label was for the Corpus itself and not the documents. The for() loops allowed my to put a meta label on each document. That said the student leaned too much on writing loops. I tried to depend on the vector nature of R more. The program was resource intensive enough.
+
+*https://www3.nd.edu/~steve/computing_with_data/20_text_mining/text_mining_example.html#/
+
+This slide deck gave guidance on how to clean the data for analysis. 
 
 
 
