@@ -175,13 +175,6 @@ prop.table(table(tree_result[,1] == lbls[502:N]))
 
 We get 96% accuracy with the Random Forest, which is excellent. 
 
-## Summary
-
-* Analysis of word counts in the Spam and Ham emails revealed differences in the most commonly occurring words.
-
-* The removal of the top word root in both lists, 'receiv', increased the accuracy by more than 30% of previously reported results.
-
-* Accuracy of individual supervised machine learning models ranged from 96% to 99%.
 
 ### Maximum Entropy
 
@@ -196,6 +189,13 @@ prop.table(table(max_result[,1] == lbls[502:N]))
 
 Similar to the SVM we get greater than 99% with Max Entropy.
 
+## Summary
+
+* Analysis of word counts in the Spam and Ham emails revealed differences in the most commonly occurring words.
+
+* The removal of the top word root in both lists, 'receiv', increased the accuracy by more than 30% of previously reported results.
+
+* Accuracy of individual supervised machine learning models ranged from 96% to 99%.
 
 
 ## Annotated Refenences
