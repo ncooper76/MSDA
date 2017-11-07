@@ -1,0 +1,144 @@
+---
+title: "DATA 607 Week 11 Discussion"
+author: "Chunhui Zhu & Nathan Cooper"
+date: "November 6, 2017"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Scenario Design for Grubhub
+
+Grubhub is the nation's leading online and mobile food ordering company dedicated to connecting hungry diners with local takeout restaurants. The company's online and mobile ordering platforms allow diners to order from 75,000 takeout restaurants in over 1,300 U.S. cities and London. Every order is supported by the company's 24/7 customer service teams.
+The Grubhub portfolio of brands includes Grubhub, Seamless, Eat24, AllMenus and MenuPages.
+
+1. Who are your target users?
+
+$\textbf{Local residents, Workers, Takeout Restaurants}$
+ 
+2. What are their key goals?
+
+$\textbf{Local consumer (residents/worker)}$: trustful & faster delivery with low delivery fee, discover good quality food or new food, get multiple orders in one order, competitive price with similar food, save money.
+
+$\textbf{Restaurant/local business}$: improve business by targeting /understanding their clients behaviors, improve sale & profit by targeting more clients, gain good reputation, low advertisement fee, promote new dishes, attractive investors, understand their competitors.
+ 
+3. How can you help them accomplish those goals?
+
+$\textbf{On consumer side}$: help clients understand what they paid; provide timely and distant estimation when processing order; provide friendly features and easy access API to improve client rating, easily find their favorite food, such as provide relevant top rating recommendation; provide instant coupon/ promotion and special event alert to  meet customer's need and help customer to save money.
+
+$\textbf{On business side}$: provide faster delivery service to their clients, lower the advertisement fee by targeting their real customer, analyze customer's reviews and understand client's behavior, provide competitive pricing analysis for similar food which help them understand their business statues,  advertising new dishes like special cuisine/seasonal cuisine to targeted clients,  more pop up for local event announcement.
+
+## Reverse Engineering Grubhub.com's Recommendation Engine.
+
+Our first step into reverse engineering the grubhub.com recommendation engine was to log onto an account (Nathan's) and make observations about what restaurants were recommended based on queries made on the search bar.
+
+> Just like Amazon, Grubhub's recommendation engine is based on several factors including past orders and their cuisines, past reviews, popular restaurants (based on other diners' reviews) in the neighborhood, similar diners' ordering habits, etc. [1]
+
+The home screen upon login gives in order the following recommendations:
+
+* Previous Orders in chronological order with a quick reorder button with the items ordered previously.
+
+* Most Popular Near You. A side scroll list of the most frequently ordered from restaurants within about 1 mile of the home address.
+
+* Fastest Delivery to You. A list of restaurants that had the shortest delivery times the top 3 had delivery times < 35 min.
+
+* Since You Enjoy [Cuisine Type]. A list of recommendations that are based upon the most frequently ordered cuisine type.
+
+## Food-item: Pizza
+
+We then used Nathan's account to make our queries, the first of which was 'Pizza' since that is a popular home delivery food item.
+
+The first thing that we noticed was an options menu on the left of the screen that allowed for further refinement of the search. These options are a delivery/pickup button, a constraint on user rating as a series of stars, 1-5, a constraint on price by dollar signs, 1-5 where 1 is the cheapest option and 5 the most expensive, a slider that put an upper limit on delivery time low end, $\leq$ 45 minutes, $\leq$ 60 minutes, and anytime, finally there is a list of radio buttons for other options: Coupons Available, New, Order Tracking, Open Now and Free Delivery.
+
+Without using these modifiers, the top 5 choices:
+
+Distance (miles) | User Rating (Stars) | Delivery Time (min) | Price (\$'s)| Delivery Fee | Order Minimum |
+---|---|---|---|---|---|
+0.67|5| 30-40 | 2 | Free | \$15 |
+0.28|4| 45-55 | 2 | Free | \$10 |
+0.21 | 3 | 35-45  |3 | \$3.99 | \$12 |
+1.22 | 3.5 | 55-65  |1 | \$1.99 | \$10 |
+0.52 | 4.5 | 45-55 | 1 | Free | \$10 |
+
+
+The two most important factors seem to be user rating and delivery time. with user rating being most important.
+
+When we used the side bar to limit to pizza places to 4 stars and above, instead of the 5th place entry in the table above moving to 3rd place, it was over taken by a restaurant that was more expensive ($\$\$\$$, \$17 minimum, \$2 delivery fee) but had a 15 minute shorter delivery time, 30-40 minutes. This suggests that delivery time is the decisive factor when restaurants differ by <1 star. 
+
+Toggling the price was not very helpful as it looks for that rating and under. The most expensive Pizza Places in the delivery area are $\$\$\$$. So, it only made a difference when placed < $\$\$\$$. When we selected $<\$\$$ selections essentially just moved up on the list. When $\$$ was selected the third option stayed in place, but two previously lower ranked restaurants moved above it. Both of them labeled 'sponsored'. As discussed below, Sponsorship place a large role when cuisine type is selected instead of food item.
+
+Toggling features like coupons was far more restrictive. It will only show places with those exact features. 
+
+## Cuisine Type: Indian Food
+
+To test the recommender system against a broader category, we selected Indian food since it is frequently ordered by Nathan, but not the most order. That is there may be more entropy in selections since grubhub has fewer data than a more frequently ordered cuisine type. We will test to see how closely the system recommendations resembles those made on an individual food item, and to see what food items are recommended once a restaurant is selected. 
+
+### Restaurant Selection
+
+Interestingly, once Indian Food was selected, Nathan's 'go-to' place, which marks the restaurant of that type most frequently used, was not among the top choices, it was rated 19th. This is below places that did not have anything to do with Indian Food. Note, given the time of day of the inquiry, 10:45 am , we had to toggle the 'restaurant open' option to off.
+
+The top 5 choices:
+
+Distance (miles) | User Rating (Stars) | Delivery Time (min) | Price (\$'s)| Delivery Fee | Order Minimum |
+---|---|---|---|---|---|
+1.25|3.5| 60-70 | 2 | Free | \$15 |
+0..62|4.5| 40-50 | 2 | Free | \$20 |
+3.33 | 3 | 30-40  |2 | \$0+ | \$10 |
+0.53 | 4.5 | 30-40  |3 | Free | \$10 |
+0.82 | 4.5 | 40-50 | 1 | Free | \$15 |
+
+Note that the top choice, which seems mediocre compared to the others was marked as 'new'. As argued below they maybe paying grubhub extra to remain competitive.
+
+The top two choices were also marked as 'sponsored'. "Restaurants can choose from four commission levels (12.5%, 15%, 17.5%, and 20%); the more a restaurant pays, the higher up it will appear in the search results. When you search for restaurants on Seamless, you may have noticed that, in the default view, the results appear to be random, but they're actually arranged by who paid what."[2] 
+
+Note that Grubhub and Seamless were consolidated in 2013.[2]
+
+Apparently, there is a hidden category in the recommender system that has nothing to do with user taste or food/delivery quality, but how much the restaurant pays into the system. In fact, when the price switch was toggled to $\$$, the top two restaurants were a deli and a sushi place. The top most Indian restaurant was 3rd.
+
+Otherwise, toggling the user ratings features, and price had similar effects as for Pizza above.
+
+### Food Selection
+
+We selected the 4th restaurant on the list. The first two possibly having higher buy-ins makes it less likely that the user will actually like the food as much as suggested, and the 3rd restaurant's delivery time vs distance: 3.33 miles away in Queens vs. 30-40 minutes delivery time seems dubious as discussed below in Gaming the System.
+
+Grubhub recommended 9 food items, only 3 of which had never been ordered before from a similar restaurant: A Prix-Fix meal, Butter Chicken and a Chicken Lunch Special.
+
+## Machine Learning Models
+
+Grubhub has a very complex recommender systems that works on two levels. It recommends which restaurants to order from and then which food items you might like to order from within a restaurant.  Grubhub, at least in part, uses another company, Nara Logics, to design it's recommender system. Nara Logic uses Neural Networks as the basis of it's recommender systems. [3]
+
+Neural Networks are designed to mimic the animal brain. It is composed of nodes called neurons and their interconnections. The calculations occur in three steps, an input layer, hidden layers and an output layer.[4] In this case, the input node starts with data the includes, roughly in order: food type, features, the restaurant's buy-in amount, user ratings, delivery time, and price category. The hidden layers of the network mostly likely are weighted calculations based on past user behavior and similar behavior from other users, and the output layer is a ranked list of restaurants. 
+
+As for food recommendations, this seems more simply to be a system that matches key words in past orders with key words in the menu of the current restaurant. This can be done easily with an SVM model or a Random Forest.
+
+## Gaming the System.
+
+The ethics of using a buy-in system are debatable, but as it stands now it is a legitimate strategy for systems like grubhub to make money and restaurants that use the system to remain competitive. There are, however, more dubious means to improve a rating as discusses below. 
+
+Recently Nathan ordered a meal from a restaurant based entirely on cuisine type (Peruvian) that was the top recommended restaurant of that type. He received a text that the food had been delivered about 45 minutes after the order (within the time range). However, the food had not arrived yet. Upon calling the restaurant he was told that the food had just left. Nathan looked up the location on the map and realized that the restaurant was 1.5 miles away and the delivery person, on bicycle, had to cross two major roadways (Queens BLVD, then Northern BLVD) to arrive there. It took another 45 minutes for the food to arrive.
+
+Most restaurants within the system mark the food as out for delivery before it is actually ordered, the food is then marked as delivered once the delivery person notifies the restaurant by text message. Most recommended restaurants are within about 1 mile of the home address.
+
+It seems that restaurants can game their standing by falsely reporting when the food is delivered, and artificially reducing their delivery time and inflating their delivery areas. Caveat Emptor is still a watch word when ordering. 
+
+## Recommendations
+
+* We recommend that grubhub.com improve how it measures delivery time by requiring restaurants to track orders in transit. 
+
+* We recommend that grubhub.com expand it's business model to include methods for restaurants to target advertising to potential customers. 
+
+## References
+
+[1] https://digit.hbs.org/submission/grubhub-revolutionizing-the-food-ordering-landscape/
+
+[2] https://tribecacitizen.com/2016/03/01/why-restaurants-hate-grubhub-seamless/
+
+[3] https://www.forbes.com/sites/adamtanner/2013/07/30/the-app-that-knows-your-food-likes-better-than-you-do/#32f51df76910
+
+[4] https://courses.cognitiveclass.ai/courses/course-v1:DeepLearning.TV+ML0115EN+v2.0/courseware/407a9f86565c44189740699636b4fb85/5954a0d4016a4346b83ff34bd5edef84/
+
