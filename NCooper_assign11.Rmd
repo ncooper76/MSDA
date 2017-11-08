@@ -50,7 +50,7 @@ fit <- lm(cars$dist ~ cars$speed)
 summary(fit)
 ```
 
-If we didn't know better we'd say that there is an incredibly signifcant linear correlation, as the p value is much less than 0.05, and call it quits.  But we know that this isn't the case.
+If we didn't know better we'd say that there is an incredibly significant linear correlation, as the p value is much less than 0.05, and call it quits.  But we know that this isn't the case.
 
 ## Data Visualization
 
@@ -63,7 +63,7 @@ In this case the data visualization isn't much help in determining that the line
 
 ## Residuals
 
-Linear models work as long as residuals are normally distributed and appear random when plotted against the independant varaible.
+Linear models work as long as residuals are normally distributed and appear random when plotted against the independent variable.
 
 ```{r res, eval=TRUE}
 res <- resid(fit)
@@ -79,5 +79,7 @@ qqnorm(res)
 qqline(res)
 ```
 
-The residuals here do not appear random. They seem to grow in range as the initial speed increases, and are not uniformly scattered around zero. The Normal Q-Q plot also shows deviation from the thoeretical values at the upper quantiles. Given this, the skewness of the residuals, and the underlying physics, a linear model is not valid.
+The residuals here do not appear random. They seem to grow in range as the initial speed increases, and are not uniformly scattered around zero. The Normal Q-Q plot also shows deviation from the theoretical values at the upper quantiles. Given this, the skewness of the residuals, and the underlying physics, a linear model is not valid.
+
+
 
