@@ -105,7 +105,7 @@ to predict the height of this child?
 
 No, these data were taken on a sample of adults and can only be used to make predictions on an adult population. Children do not belong to the population from which the sample was collected.
 
-## 7.30 7.30 Cats, Part I.
+## 7.30 Cats, Part I.
 
 The following regression output is for predicting the heart weight (in g) of cats
 from their body weight (in kg). The coeffcients are estimated using a data set of 144 domestic cats.
