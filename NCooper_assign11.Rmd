@@ -81,5 +81,54 @@ qqline(res)
 
 The residuals here do not appear random. They seem to grow in range as the initial speed increases, and are not uniformly scattered around zero. The Normal Q-Q plot also shows deviation from the theoretical values at the upper quantiles. Given this, the skewness of the residuals, and the underlying physics, a linear model is not valid.
 
+## Making the Data Linear
 
+We can transform the data to make a linear regression match the data.
 
+### Subsitution 
+
+We can make the formula look linear by making a substitution.
+
+$$
+d = Cv_i^2 \\
+\text{Let x  =}v_i^2 \\
+d = Cx
+$$
+
+So we square speed and use it as the predictive variable.
+```{r sub, eval=TRUE}
+speed_sq = cars$speed^2
+fit2 <- lm(cars$dist ~ speed_sq)
+summary(fit2)
+plot(speed_sq, cars$dist, xlab = 'Speed^2 in (mph)^2', ylab = 'Breaking distance in m', col = 'blue')
+abline(fit2, col = 'orange')
+hist(resid(fit2))
+plot(speed_sq, resid(fit2))
+qqnorm(resid(fit2))
+qqline(resid(fit2))
+```
+
+Normality of the residuals and hetroskedacity is still a problem using this technique.
+
+### log-log 
+
+$$
+d = Cv_i^2 \\
+log(d) = log(Cv_i^2)\\
+log(d) = log(C) + 2log(v_i) \\
+\text{Let: log(d) = y, B_o = log(C), x = log(v_i)} \\
+y = B_o + 2x
+$$
+
+```{r log, eval=TRUE}
+fit3 <- lm(log(cars$dist) ~ log(cars$speed))
+summary(fit3)
+plot(log(cars$speed), log(cars$dist), xlab = 'log(Speed) in log(mph)', ylab = 'log(Breaking distance) in log(m)', col = 'steelblue')
+abline(fit3, col = 'orangered')
+hist(resid(fit3))
+plot(speed_sq, resid(fit3))
+qqnorm(resid(fit3))
+qqline(resid(fit3))
+```
+
+Normality of the residuals and hetroskedacity is improved using this technique.
