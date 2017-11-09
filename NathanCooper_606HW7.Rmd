@@ -1,0 +1,188 @@
+---
+title: "DATA 606 HW7"
+author: "Nathan Cooper"
+date: "November 9, 2017"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(openintro)
+```
+
+## 7.24 Nutrition at Starbucks, Part I.
+
+The scatterplot below shows the relationship between
+the number of calories and amount of carbohydrates (in grams) Starbucks food menu items contain.
+
+Since Starbucks only lists the number of calories on the display items, we are interested in
+predicting the amount of carbs a menu item has based on its calorie content.
+
+(a) Describe the relationship between number of calories and amount of carbohydrates (in grams)
+that Starbucks food menu items contain.
+
+As the Calorie count (Energy) increases so does carb amount, with a lot of scatter to the data. Carbs are one of three sources of energy in food the others being fats and proteins.
+
+(b) In this scenario, what are the explanatory and response variables?
+
+Explanatory - Calories
+Response - Carbs.
+
+In physics, we would do the opposite as energy is the effect (dependent) and carbs are a cause (independent).
+
+(c) Why might we want to fit a regression line to these data?
+
+Carbs include sugars, in which increased consumption is implicated in metabolic disorders such as obesity and diabetes. Customers who are aware of this will want to know how many Calories on average are coming from carbs.
+
+(d) Do these data meet the conditions required for fitting a least squares line?
+
+No. The residuals increase in range as the calorie count increase this means there is not constant variance, also there is a left skew to the data so the residuals are not normally distributed.
+
+## 7.26 Body measurements, Part III.
+
+Exercise 7.15 introduces data on shoulder girth and
+height of a group of individuals. The mean shoulder girth is 107.20 cm with a standard deviation
+of 10.37 cm. The mean height is 171.14 cm with a standard deviation of 9.41 cm. The correlation
+between height and shoulder girth is 0.67.
+
+(a) Write the equation of the regression line for predicting height.
+
+$$
+\beta_1 = r\frac{s_y}{s_x} \\
+\beta_1 = r\frac{s_h}{s_g} \\
+\beta_1 = 0.67\frac{9.41}{10.37} \\
+\beta_1 = 0.6079749 \\
+\beta_0 = \bar{y} - \beta_1 \bar{x} \\
+\beta_0 = 171.14 cm- 0.6079749 * 107.20cm \\
+\beta_0 = 105.9651 cm \\
+y = 105.9651 cm + 0.6079749*x
+$$
+
+(b) Interpret the slope and the intercept in this context.
+
+The slope means that for every 1 cm they increase in shoulder girth, their height increases by 0.6079749 cm on average.
+
+The intercept means that if a person were to have 0 cm in shoulder girth they would be 105.9651 cm tall on average. Note that is is not physically possible, so practically it means that people are taller than they are wide at the shoulder.
+
+(c) Calculate R$^2$
+of the regression line for predicting height from shoulder girth, and interpret it
+in the context of the application.
+
+$$
+R = 0.67 \\
+R^2 = 0.4489
+$$
+
+44.89% of the model is explained by shoulder girth.
+
+(d) A randomly selected student from your class has a shoulder girth of 100 cm. Predict the height
+of this student using the model.
+
+$$
+y = 105.9651 cm + 0.6079749*x \\
+y = 105.9651 cm + 0.6079749*100cm \\
+y = 166.7626 cm
+$$
+
+(e) The student from part (d) is 160 cm tall. Calculate the residual, and explain what this residual
+means.
+
+$$
+e = y_i - \hat{y} \\
+e = 160 cm - 166.7626 cm \\
+e = 6.7626 cm
+$$
+
+This means that there is a 6.7626cm difference between what our model predicted and what we actually measured.
+
+(f) A one year old has a shoulder girth of 56 cm. Would it be appropriate to use this linear model
+to predict the height of this child?
+
+No, these data were taken on a sample of adults and can only be used to make predictions on an adult population. Children do not belong to the population from which the sample was collected.
+
+## 7.30 7.30 Cats, Part I.
+
+The following regression output is for predicting the heart weight (in g) of cats
+from their body weight (in kg). The coeffcients are estimated using a data set of 144 domestic cats.
+
+Parameter|Estimate |Std. Error| t value | Pr(>\|t\|)|
+---|---|---|---|---|
+(Intercept) |-0.357| 0.692| -0.515 |0.607|
+body wt |4.034| 0.250| 16.119| 0.000|
+s=1.452  R$^2$=64.66%  R$^2_{adj}$=64.41%
+
+Note that the people who made the measurements here made a physics error. Grams and Kilograms measure mass. Weight is the force of gravity applied to an object by Earth, and is measured in Newtons or dynes. Weight increases as mass increases by Newton's universal law of gravitation, but they are not equivalent.
+
+
+(a) Write out the linear model.
+
+$y = -0.357g+4.034*x$
+
+Where y is heart mass in grams, and x is body mass in Kg.
+
+(b) Interpret the intercept.
+
+The intercept here means error in the data has caused an off-set between the body mass and heart mass.
+
+Mass as defined by physics measures an objects inertia and how strongly it interacts with gravity. In both cases, material objects like cats and their hearts must have mass greater than 0. A literal interpretation of the slope would be non-physical.
+
+(c) Interpret the slope.
+
+For every 1 kg a cat increases in mass, their hearts mass increases by 4.034 grams.
+
+(d) Interpret R$^2$.
+
+64.66% of our model is explained by the cat's body mass.
+
+(e) Calculate the correlation coefficient.
+
+$$
+R = \sqrt(0.6466) \\
+R = 0.8041144
+$$
+
+## 7.40 Rate my professor.
+Many college courses conclude by giving students the opportunity
+to evaluate the course and the instructor anonymously. However, the use of these student evaluations as an indicator of course quality and teaching effectiveness is often criticized because these
+measures may reflect the influence of non-teaching related characteristics, such as the physical appearance of the instructor. Researchers at University of Texas, Austin collected data on teaching
+evaluation score (higher score means better) and standardized beauty score (a score of 0 means
+average, negative score means below average, and a positive score means above average) for a
+sample of 463 professors.
+
+The scatterplot below shows the relationship between these variables,
+and also provided is a regression output for predicting teaching evaluation score from beauty score.
+
+Parameter|Estimate| Std. Error| t |value Pr(>\|t\|)|
+---|---|---|---|---|
+(Intercept)| 4.010 |0.0255| 157.21| 0.0000|
+beauty| $\boxed{\space \space }$ |  0.0322 |4.13 |0.0000|
+
+(a) Given that the average standardized beauty score is -0.0883 and average teaching evaluation
+score is 3.9983, calculate the slope. Alternatively, the slope may be computed using just the
+information provided in the model summary table.
+
+$$
+\beta_0 = \bar{y} - \beta_1 \bar{x} \\
+\beta_1 \bar{x}=  \bar{y}-\beta_0   \\
+\beta_1 = \frac{\bar{y}-\beta_0}{\bar{x}} \\
+\beta_1 = \frac{3.9983-4.010}{-0.0883} \\
+\beta_1 = 0.1325028
+$$
+(b) Do these data provide convincing evidence that the slope of the relationship between teaching
+evaluation and beauty is positive? Explain your reasoning.
+
+The p-values of the slope and intercept are both <0.05, so the model is statistically significant. The slope seems large enough given the ration of the range of the variables is $(5.0-2.0)/(2.0--1.5)= 0.8571429$. I would say that this means that there is practical significance that appearance has an effect on professor evals.
+
+(c) List the conditions required for linear regression and check if each one is satisfied for this model
+based on the following diagnostic plots.
+
+Constant variance - The residuals look randomly scattered about 0 when plotted in order of collection.
+Normally Distributed Residuals - Data has a slight left skew but looks fairly Normal in the QQ plot and Histogram. 
+Linearity - The residuals look randomly scattered about 0 when plotted vs beauty.
+
+I would say that the conditions for linear regression are satisfied.
