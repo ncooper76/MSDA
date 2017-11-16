@@ -1,0 +1,47 @@
+---
+title: "DATA 607 MySQL to MongoDB"
+author: "Nathan Cooper"
+date: "November 15, 2017"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## MySQL to CSV
+
+First we will take the Flights Database from MySQL and transfer it to a .csv file with the help of https://www.r-bloggers.com/dump-mysql-to-csv-using-r/
+
+```{r sql-csv, eval=TRUE}
+suppressMessages(suppressWarnings(library(RMySQL)))
+db <- dbConnect(MySQL(), user='root', password='johnny', dbname='flights', host='localhost')
+tables <- dbListTables(db)
+tables
+for (i in 1 : length(tables)){
+  temp<-(dbReadTable(db, tables[i]))
+  write.table(temp, tables[i], row.names=F, sep = ',')
+}
+flights <- data.frame(read.csv("~\\Dataset\\flights"))
+head(flights)
+ontime <- data.frame(read.csv("~\\Dataset\\ontime"))
+head(ontime)
+planes <- data.frame(read.csv("~\\Dataset\\planes"))
+head(planes)
+weather <- data.frame(read.csv("~\\Dataset\\weather"))
+head(weather)
+```
+
+## From CSV to MongoDB
+
+Now we will use the csv files to populate the MongoDB.
+
+```{r mngdb, eval=TRUE}
+suppressMessages(suppressWarnings(library(rmongodb)))
+mongo = mongo.create(host = "localhost")
+mongo.is.connected(mongo)
+```
