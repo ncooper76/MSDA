@@ -1,0 +1,83 @@
+---
+title: "DATA 607 MySQL to MongoDB"
+author: "Nathan Cooper"
+date: "November 15, 2017"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## MySQL to CSV
+
+First we will take the Flights Database from MySQL and transfer it to a .csv file with the help of https://www.r-bloggers.com/dump-mysql-to-csv-using-r/
+
+```{r sql-csv, eval=TRUE}
+suppressMessages(suppressWarnings(library(RMySQL)))
+db <- dbConnect(MySQL(), user='root', password='johnny', dbname='flights', host='localhost')
+tables <- dbListTables(db)
+tables
+for (i in 1 : length(tables)){
+  temp<-(dbReadTable(db, tables[i]))
+  write.table(temp, tables[i], row.names=F, sep = ',')
+}
+flights <- data.frame(read.csv("~\\Dataset\\flights", stringsAsFactors = FALSE))
+head(flights)
+ontime <- data.frame(read.csv("~\\Dataset\\ontime", stringsAsFactors = FALSE))
+head(ontime)
+planes <- data.frame(read.csv("~\\Dataset\\planes", stringsAsFactors = FALSE))
+head(planes)
+weather <- data.frame(read.csv("~\\Dataset\\weather", stringsAsFactors = FALSE))
+head(weather)
+airlines <- data.frame(read.csv("~\\Dataset\\airlines", stringsAsFactors = FALSE))
+head(airlines)
+airports <- data.frame(read.csv("~\\Dataset\\airports", stringsAsFactors = FALSE))
+head(airports)
+cities <- data.frame(read.csv("~\\Dataset\\cities", stringsAsFactors = FALSE))
+head(cities)
+```
+
+## From dataframe to MongoDB
+
+Now we will use the dataframes to populate the MongoDB.
+
+```{r mngdb, eval=TRUE}
+suppressMessages(suppressWarnings(library(rmongodb)))
+mongo = mongo.create(host = "localhost")
+mongo.is.connected(mongo)
+b1=mongo.bson.from.df(flights)
+b2=mongo.bson.from.df(ontime)
+b3=mongo.bson.from.df(planes)
+b4=mongo.bson.from.df(weather)
+b5=mongo.bson.from.df(airlines)
+b6=mongo.bson.from.df(airports)
+b7=mongo.bson.from.df(cities)
+b1[[1]]
+b2[[1]]
+b3[[1]]
+b4[[1]]
+b5[[1]]
+b6[[1]]
+b7[[1]]
+mongo.insert(mongo,"flights",b1)
+mongo.insert(mongo,"ontime",b2)
+mongo.insert(mongo,"planes",b3)
+mongo.insert(mongo,"weather",b4)
+mongo.insert(mongo,"airlines",b5)
+mongo.insert(mongo,"airports",b6)
+mongo.insert(mongo,"cities",b7)
+```
+
+## From csv file to Neo4J
+
+```{r neo4J, eval=TRUE}
+suppressMessages(suppressWarnings(library(RNeo4j)))
+
+
+```
+
