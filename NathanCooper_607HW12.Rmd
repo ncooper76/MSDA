@@ -19,7 +19,7 @@ First we will take the Flights Database from MySQL and transfer it to a .csv fil
 
 ```{r sql-csv, eval=TRUE}
 suppressMessages(suppressWarnings(library(RMySQL)))
-db <- dbConnect(MySQL(), user='root', password='johnny', dbname='flights', host='localhost')
+db <- dbConnect(MySQL(), user='*******', password='*********', dbname='flights', host='localhost')
 tables <- dbListTables(db)
 tables
 for (i in 1 : length(tables)){
