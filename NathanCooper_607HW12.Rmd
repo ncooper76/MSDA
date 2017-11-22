@@ -75,9 +75,126 @@ mongo.insert(mongo,"cities",b7)
 
 ## From csv file to Neo4J
 
-```{r neo4J, eval=TRUE}
-suppressMessages(suppressWarnings(library(RNeo4j)))
+First I established a database called 'Flights' using the Neo4J desktop app. Neo4J assigned this database to an http port of 11001. To access this database in Chrome, I entered http:\\localhost:11001 note this is different than the default port of 7474.
+
+To use the 'LOAD CSV WITH HEADERS' cypher command I had to move the csv files into Neo4J desktop import file or the following warning would appear "Couldn't load the external resource at: file:/C:/Users/Nate/AppData/Roaming/Neo4j%20Desktop/Application/neo4jDatabases/database-c2becb82-5c85-430d-bb42-4ad6749f1f0b/current/import/airlines"
+
+The successfull Cypher queries were as follows:
+
+> load csv with headers from "file:///airlines" as airlines create (n:Airlines {carrier: airlines.carrier, name: airlines.name})
+
+> MATCH (n:Airlines) RETURN n LIMIT 1
+
+returned: 
+\{
+  "name": "Endeavor Air Inc.\r",
+  "carrier": "9E"
+\}
+
+> load csv with headers from "file:///airports" as airports create (n:Airports {faa: airports.faa, name: airports.name, lat:	airports.lat, lon:	airports.lon, alt:	airports.alt, tz:	airports.tz, dst:	airports.dst})
+
+> MATCH (n:Airports) RETURN n LIMIT 1
+
+returned: 
+
+{
+  "dst": "A",
+  "tz": "-5",
+  "faa": "04G",
+  "alt": "1044",
+  "name": "Lansdowne Airport",
+  "lon": "-80.6195833",
+  "lat": "41.1304722"
+}
+
+> load csv with headers from "file:///planes" as planes create (n:Planes {tailnum: planes.tailnum, year:	planes.year, type:	planes.type, manufacturer:	planes.manufacturer, model:	planes.model,engines:	planes.engines, seats: planes.seats,	speed: planes.speed.	engine: planes.engine})
+
+> MATCH (n:Planes) RETURN n LIMIT 1
+
+returned:
+
+{
+  "tailnum": "N10156",
+  "year": "2004",
+  "engine": "Turbo-fan",
+  "engines": "2",
+  "model": "EMB-145XR",
+  "type": "Fixed wing multi engine",
+  "seats": "55",
+  "speed": "NA",
+  "manufacturer": "EMBRAER"
+}
+
+> load csv with headers from "file:///weather" as weather create (n:Weather {origin:weather.origin, year:weather.year, month:weather.month,	day:weather.day,	hour:weather.hour,	temp:weather.temp,	dewp:weather.dewp,	humid:weather.humid,	wind_dir:weather.wind_dir,	wind_speed:weather.wind_speed,	wind_gust:weather.wind_gust,	precip:weather.precip,	pressure:weather.pressure,	visib:weather.visib})
+
+> MATCH (n:Weather) RETURN n LIMIT 1
+
+returned:
+
+{
+  "temp": "37.04",
+  "year": "2013",
+  "origin": "EWR",
+  "visib": "10",
+  "humid": "53.97",
+  "wind_dir": "230",
+  "pressure": "1013.9",
+  "wind_gust": "11.9186514756",
+  "precip": "0",
+  "month": "1",
+  "dewp": "21.92",
+  "hour": "0",
+  "wind_speed": "10.35702",
+  "day": "1"
+}
+
+> load csv with headers from "file:///flights" as flights create (n:Flights {year:flights.year,	month:flights.month,	day:flights.day,	dep_time:flights.dep_time,	dep_delay:flights.dep_delay,	arr_time:flights.arr_time,	arr_delay:flights.arr_delay,	carrier:flights.carrier,	tailnum:flights.tailnum,	flight:flights.flight,	origin:flights.origin,	dest:flights.dest,	air_time:flights.air_time,	distance:flights.distance,	hour:flights.hour,	minute:flights.minute})
+
+Note the retured values once completed:
+Added 336776 labels, created 336776 nodes, set 5388416 properties, completed after 14772 ms.
+
+This required me to allot 8 Gb of RAM to Neo4J to complete.
+
+> MATCH (n:Flights) RETURN n LIMIT 1
+
+{
+  "flight": "1545",
+  "arr_delay": "11",
+  "distance": "1400",
+  "tailnum": "N14228",
+  "year": "2013",
+  "origin": "EWR",
+  "dep_time": "517",
+  "dep_delay": "2",
+  "dest": "IAH",
+  "minute": "17",
+  "carrier": "UA",
+  "month": "1",
+  "hour": "5",
+  "arr_time": "830",
+  "air_time": "227",
+  "day": "1"
+}
+
+These were from the Alsaka Air vs. AM West assignment:
+
+> load csv with headers from "file:///cities" as cities create (n:Cities {city_id:cities.city_id,	city:cities.city})
+
+> MATCH (n:Cities) RETURN n LIMIT 1
+
+{
+  "city": "Los Angeles",
+  "city_id": "1"
+}
 
 
-```
+> load csv with headers from "file:///ontime" as ontime create (n:Ontime {city_id:ontime.city_id,	air_line:ontime.air_line,	arrived:ontime.arrived,	n:ontime.n})
 
+> MATCH (n:Ontime) RETURN n LIMIT 1
+
+{
+  "arrived": "ontime",
+  "n": "497",
+  "air_line": "Alaska",
+  "city_id": "1"
+}
