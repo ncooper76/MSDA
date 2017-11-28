@@ -1,0 +1,98 @@
+---
+title: "DATA 605 HW 14"
+author: "Nathan Cooper"
+date: "November 28, 2017"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+suppressMessages(suppressWarnings(library('pracma')))
+```
+
+For these exerices will expand this around $x=0$.
+
+## 1 f(x) = 1/1-x
+
+$$
+f(x) = \frac{1}{1-x}\\
+f(0) = 1 \\
+f'(x) = \frac{1}{(1-x)^2} \\
+f'(0) = 1 \\
+f''(x) = \frac{2}{(1-x)^3} \\
+f''(0) = 2 \\
+f^{(3)}(x) = \frac{6}{(1-x)^4} \\
+f^{(3)}(0) = 6 \\
+f^{(4)}(x) = \frac{24}{(1-x)^5} \\
+f^{(4)}(0) = 24 \\
+f^{(5)}(x) = \frac{120}{(1-x)^6} \\
+f^{(5)}(0) = 120 \\
+f(x) = f(0) + f'(0)(x-c) + \frac{f''(c)}{2!}(x-c)^2 + \frac{f^{3}(c)}{3!}(x-c)^3+ \frac{f^{4}(c)}{4!}(x-c)^4+ \frac{f^{5}(c)}{5!}(x-c)^5 +...\\
+f(x) = 1 + x + x^2 + x^3+ x^4+ x^5 +...
+$$
+
+```{r series1, eval=TRUE}
+c = 0
+f <- function(x) {1/(1-x)}
+a <- taylor(f,x0=c,5)
+a
+p <- function(x) {a[6] + a[5]*(x-c) + (a[4]*(x-c)^2) + (a[3]*(x-c)^3) + (a[2]*(x-c)^4 +(a[6]*(x-c)^5))}
+plot(f, from =-0.25,to=0.75)
+par(new=TRUE)
+plot(p, from = -0.25,to=0.75,axes=FALSE ,col = 'red')
+```
+
+## 2 f(x) = e^x
+
+$$
+f(x) = e^x\\
+f(0) = 1 \\
+f^n(x) = e^x \\
+f^n(0) = 1 \\
+f(x) = f(0) + f'(0)(x-c) + \frac{f''(c)}{2!}(x-c)^2 + \frac{f^{3}(c)}{3!}(x-c)^3+ \frac{f^{4}(c)}{4!}(x-c)^4+ \frac{f^{5}(c)}{5!}(x-c)^5 +...\\
+f(x) = 1 + x + \frac{1}{2}x^2 + \frac{1}{6}x^3+ \frac{1}{24}x^4+ \frac{1}{120}x^5 +...
+$$
+
+```{r series2, eval=TRUE}
+c = 0
+f <- function(x) {exp(x)}
+a <- taylor(f,x0=c,5) #this divides by the factorial
+a
+p <- function(x) {a[6] + a[5]*(x-c) + (a[4]*(x-c)^2) + (a[3]*(x-c)^3) + (a[2]*(x-c)^4 +(a[6]*(x-c)^5))}
+plot(f, from = -0.5,to=0.75)
+par(new=TRUE)
+plot(p, from = -.5,to=0.75,axes=FALSE ,col = 'red')
+```
+
+## 3 f(x) = ln(1+x)
+
+$$
+f(x) = ln(1+x) \\
+f(0) = 0 \\
+f'(x) = \frac{1}{1+x}\\
+f'(0) = 1 \\
+f''(x) = \frac{-1}{(1+x)^2} \\
+f''(0) = -1 \\
+f^{(3)}(x) = \frac{2}{(1+x)^3} \\
+f^{(3)} = 2 \\
+f^{(4)}(x) = \frac{-6}{(1+x)^4} \\
+f^{(4)}(0) = -6 \\
+f^{(5)}(x) = \frac{24}{(1+x)^5} \\
+f^{(5)}(0) = 24 \\
+f(x) = f(0) + f'(0)(x-c) + \frac{f''(c)}{2!}(x-c)^2 + \frac{f^{3}(c)}{3!}(x-c)^3+ \frac{f^{4}(c)}{4!}(x-c)^4+ \frac{f^{5}(c)}{5!}(x-c)^5 +...\\
+f(x) = x + -\frac{1}{2}x^2 + \frac{1}{3}x^3-\frac{1}{4} x^4+ \frac{1}{5}x^5 +...
+$$
+
+```{r series3, eval=TRUE}
+c = 0
+f <- function(x) {log(1+x)} #default base is e
+a <- taylor(f, x0=c, 5)
+a
+p <- function(x) {a[6] + a[5]*(x-c) + (a[4]*(x-c)^2) + (a[3]*(x-c)^3) + (a[2]*(x-c)^4 +(a[6]*(x-c)^5))}
+plot(f, from = -0.25,to=0.75)
+par(new=TRUE)
+plot(p, from = -0.25,to=0.75,axes=FALSE ,col = 'red')
+```
