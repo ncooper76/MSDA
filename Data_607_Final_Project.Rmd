@@ -1,0 +1,82 @@
+---
+title: "Final Project"
+author: "Chunhui Zhu & Nathan Cooper"
+date: "November 29, 2017"
+header-includes:
+   \usepackage{ulem}
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading the data
+
+```{r load, eval=TRUE}
+suppressMessages(suppressWarnings(library('tidyverse')))
+energy <- 'all_energy_statistics.csv' %>% read.csv(stringsAsFactors = FALSE) %>% tbl_df()
+head(energy)
+nrow(energy)
+ncol(energy)
+```
+
+With over 1,000,000 rows, subsetting these data seems like a reasonable approach to analyzing them. To get a good idae of where to subset, we can look at countries/areas and commodities and transactions.
+
+
+### Exploring the Data - Catagories
+
+```{r explore,eval=TRUE}
+country <- energy[,1] %>% unique() %>% arrange(country_or_area)
+nrow(country)
+comm_trans <-energy[,2]  %>% unique() %>%arrange(commodity_transaction)
+nrow(comm_trans)
+head(comm_trans)
+tail(comm_trans)
+```
+
+We have 243 countries and areas and 2336 catagories of commodities and transactions. The commodity-transactions are listed first by the commodity, the object being used, and then by the transactions, how that object is used. These are seperated by a dash. We can use a regular expression to seperate the commodities from the transactions. 
+
+```{r comm, eval=TRUE}
+suppressMessages(suppressWarnings(library(stringr)))
+comm_trans<- comm_trans %>% separate("commodity_transaction", c('commodity', 'transaction'), " - ")
+comm <- comm_trans[,1] %>% unique() 
+comm # There are duplicates due to cases, spelling errors.
+for(i in 1:nrow(comm[,1])){ # create a loop to get rid of case duplicates
+  comm[i,1] <- comm[i,1] %>% tolower()
+  comm[i,1] <- comm[i,1] %>% str_replace("hrad","hard") #one of the cells had a spelling error
+}
+comm <- comm %>% unique()
+comm
+transaction <- comm_trans[,2] %>% unique()
+for(i in 1:nrow(transaction[,1])){ # create a loop to get rid of case duplicates
+  transaction[i,1] <- transaction[i,1] %>% tolower()
+}
+transaction <- transaction %>% unique()
+transaction
+```
+
+Units of measure are also of interest. Solid fuels will be measured by mass, and liquid and gasses by volume. Furthermore energy units can be measured in Kilowatt-hours, Power*time is Energy, or Joules, a direct measure of energy.
+
+```{r, units, eval=TRUE}
+en_units <- energy[,4] %>% unique() %>% arrange(unit)
+en_units
+```
+
+
+Kilowatt hours can be converted into Joules by the following conversion:
+$$
+\frac{1 KW*hr}{1}*\frac{3600 s}{1 hr}*\frac{1000 J}{1 KW*s} = 3,600,000 J \\
+1 TJ = 1*10^{12} J \\
+\frac{3.6x10^6 J}{1} * \frac{1 TJ}{1*10^{12}J} = 3.6*10^{-6} TJ
+$$
+
+For any conversion of mass or volume, specfic energy (Energy per mass) or Energy Density (Energy per Volume) must be factored into the measurment. The effieciency of the method of energy production must also be accounted for.
+
+
+## Coal Import/Export
+
