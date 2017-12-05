@@ -17,7 +17,145 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Loading the data
 
+```{r load, eval=TRUE---
+title: "Final Project"
+author: "Chunhui Zhu & Nathan Cooper"
+date: "November 29, 2017"
+header-includes:
+   \usepackage{ulem}
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading the data
+
 ```{r load, eval=TRUE}
+suppressMessages(suppressWarnings(library('tidyverse')))
+energy <- 'all_energy_statistics.csv' %>% read.csv(stringsAsFactors = FALSE) %>% tbl_df()
+head(energy)
+nrow(energy)
+ncol(energy)
+```
+
+With over 1,000,000 rows, subsetting these data seems like a reasonable approach to analyzing them. To get a good idae of where to subset, we can look at countries/areas and commodities and transactions.
+
+
+### Exploring the Data - Catagories
+
+```{r explore,eval=TRUE}
+country <- energy[,1] %>% unique() %>% arrange(country_or_area)
+country
+comm_trans <-energy[,2]  %>% unique() %>%arrange(commodity_transaction)
+nrow(comm_trans)
+head(comm_trans)
+tail(comm_trans)
+```
+
+We have 243 countries and areas and 2336 catagories of commodities and transactions. The commodity-transactions are listed first by the commodity, the object being used, and then by the transactions, how that object is used. These are seperated by a dash. We can use a regular expression to seperate the commodities from the transactions. 
+
+```{r comm, eval=TRUE}
+suppressMessages(suppressWarnings(library(stringr)))
+#energy[,2] <- energy[,2] %>% tolower() These seemed to stall Rstudio. I look for another way to fix this.
+#energy[,2] <- energy[,2] %>% str_replace("hrad","hard") #one of the cells had a spelling error
+#tail(energy[,2])
+comm_trans<- comm_trans %>% separate("commodity_transaction", c('commodity', 'transaction'), " - ")
+comm <- comm_trans[,1] %>% unique() 
+comm # There are duplicates due to cases, spelling errors.
+for(i in 1:nrow(comm[,1])){ # create a loop to get rid of case duplicates
+  comm[i,1] <- comm[i,1] %>% tolower()
+  comm[i,1] <- comm[i,1] %>% str_replace("hrad","hard") #one of the cells had a spelling error
+}
+comm <- comm %>% unique()
+comm
+transaction <- comm_trans[,2] %>% unique()
+for(i in 1:nrow(transaction[,1])){ # create a loop to get rid of case duplicates
+  transaction[i,1] <- transaction[i,1] %>% tolower()
+}
+transaction <- transaction %>% unique()
+transaction
+```
+
+## Subsetting Data
+
+We can see that the above data is very large and will be difficult to deal with. Initially we ran some loops on the entire data set, but they took close to an hour to complete. This is not very practical, and subsetting the data into smaller parts may make these data more managable.
+
+According to https://www.investopedia.com/articles/investing/022415/worlds-top-10-economies.asp, the top 10 world economies are:
+
+1) USA
+2) China
+3) Japan
+4) Germany
+5) UK
+6) India
+7) France
+8) Brazil
+9) Italy
+10) Canada
+
+We will use these to break the data into more managable blocks:
+
+```{r subsets, eval=TRUE}
+usa <- energy %>% filter(country_or_area == "United States")
+nrow(usa)
+head(usa)
+china <- energy %>% filter(country_or_area == "China" |country_or_area == "China, Hong Kong SAR"|country_or_area == "China, Macao SAR")
+nrow(china)
+head(china)
+japan <- energy %>% filter(country_or_area == "Japan")
+nrow(japan)
+head(japan)
+germany <- energy %>% filter(country_or_area == "Germany")
+nrow(germany)
+head(germany)
+```
+
+
+## Transforming Units
+
+Units of measure are also of interest. Solid fuels will be measured by mass, and liquid and gasses by volume. Furthermore energy units can be measured in Kilowatt-hours, Power*time is Energy, or Joules, a direct measure of energy.
+
+```{r, units, eval=TRUE}
+en_units <- energy[,4] %>% unique() %>% arrange(unit)
+en_units
+```
+
+
+Kilowatt hours can be converted into Joules by the following conversion:
+$$
+\frac{1 KW*hr}{1}*\frac{3600 s}{1 hr}*\frac{1000 J}{1 KW*s} = 3,600,000 J \\
+1 TJ = 1*10^{12} J \\
+\frac{3.6x10^6 J}{1} * \frac{1 TJ}{1*10^{12}J} = 3.6*10^{-6} TJ \\
+1 TJ = \frac{1KW*hr}{3.6*10^{-6}} = \frac{1*10^6 KW*hr}{3.6}
+$$
+
+Note that KW\*hr are measured in millions, such that $1*10^6\space KW*hr = 3.6 TJ$, according to the above conversion. So to convert those measurements into TJ we need simply divide the Millions of $KW*hr$ by 3.6 according to the above conversion.
+
+```{r, unit_convert, eval=TRUE}
+for(i in 1:nrow(energy)){
+  if(energy[i,4] == "Kilowatt-hours, million"){
+    energy[i,5] = energy[i,5]/3.6
+    energy[i,4] = "Terajoules"  
+}
+  }
+```
+
+```{r, units2, eval=TRUE}
+en_units <- energy[,4] %>% unique() %>% arrange(unit)
+en_units
+```
+For any conversion of mass or volume, specfic energy (Energy per mass) or Energy Density (Energy per Volume) must be factored into the measurment. The effieciency of the method of energy production must also be accounted for.
+
+
+## Coal Import/Export
+
+ 
 suppressMessages(suppressWarnings(library('tidyverse')))
 energy <- 'all_energy_statistics.csv' %>% read.csv(stringsAsFactors = FALSE) %>% tbl_df()
 head(energy)
