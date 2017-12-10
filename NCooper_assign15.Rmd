@@ -1,0 +1,176 @@
+---
+title: "DATA 605 HW 15"
+author: "Nathan Cooper"
+date: "December 6, 2017"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Find the equation of the regression line for the given points.
+
+Round any final values to the nearest hundredth, if necessary.
+( 5.6, 8.8 ), ( 6.3, 12.4 ), ( 7, 14.8 ), ( 7.7, 18.2 ), ( 8.4, 20.8 )
+
+$$
+\beta_1 = \frac{\sum_{i=1}^n (x_i-\bar{X})(y_i-\bar{Y})}{\sum_{i=1}^n (x_i-\bar{X})^2} \\
+\beta_1 = \frac{Cov(x,y)}{Var(x)}\\
+\beta_0 = \bar{Y} - m\bar{X} \\
+$$
+
+We can use R to show this manually, and then use the lm() function to check our work.
+
+```{r man_regress, eval=TRUE}
+x = c(5.6, 6.3, 7, 7.7, 8.4)
+y = c(8.8, 12.4, 14.8, 18.2, 20.8)
+x_bar = mean(x)
+x_bar
+y_bar = mean(y)
+y_bar
+x_x_bar = x-x_bar
+sq_x_xbar = (x_x_bar)^2
+sq_x_xbar
+var_x = sum(sq_x_xbar)/(length(x)-1)
+var_x
+var(x) #check my work
+y_y_bar = y-y_bar
+y_y_bar
+prod_x_y = x_x_bar*y_y_bar
+prod_x_y
+cov_xy = sum(prod_x_y)/(length(x)-1)
+cov_xy
+cov(x,y) #check my work
+B_1 = cov_xy/var_x
+B_1
+B_0 = y_bar - B_1*x_bar
+B_0
+```
+
+Rounded to the nearest hundredth place:
+
+$$
+y = -14.8 + 4.26*x
+$$
+
+```{r lm, eval=TRUE}
+fit <- lm(y~x)
+summary(fit)
+plot(x,y, col = 'orangered')
+abline(fit, col = 'steelblue')
+qqnorm(resid(fit))
+qqline(resid(fit))
+hist(resid(fit))
+plot(fitted(fit),resid(fit))
+shapiro.test(resid(fit))
+```
+
+It's hard to visualize the normality of only 5 data points so the Shaprio-Wilks test was used; since the p-value of 0.1497 is $> 0.05$, we must accept the null hypothesis that the residuals come from a Normal Distribution.
+
+According to lm():
+
+$$
+y = -14.8 + 4.26*x
+$$
+
+rounded to the nearest 100th.
+
+## 2. Find all local maxima, local minima, and saddle points for the function given below.
+
+Write your answer(s) in the form  (x, y, z). Separate multiple points with a comma.
+
+$$ 
+f(x,y) = 24x-6xy^2-8y^3 \\
+f_x = 24 - 6y^2 \\
+f_y = -12xy - 24y^2 \\
+24-6y^2 = 0 \space\&\space -12xy-24y^2 = 0 \\
+y = \sqrt{\frac{24}{6}} = \pm2 \\
+x = -2y = \mp4 \\
+$$
+
+```{r crit_finder, eval=TRUE}
+ crit_finder <- function(x,y){
+   z = 24*x-6*x*y^2-8*y^3
+   return(c(x,y,z))
+ }
+crit_finder(-4,2)
+crit_finder(4,-2)
+
+min_max <- function(x,y){
+  D = (24 - 6*y^2)*(-12*x*y - 24*y^2) - 144*y^2
+  if(D>0){
+    return("maximum or minimum")
+  }
+  if(D<0){
+    return("Saddle point")
+  }
+  else{
+    return("Inconclusive")
+  }
+}
+min_max(-4,2)
+min_max(4,-2)
+```
+
+## 5. A grocery store sells two brands of a product, the "house" brand and a "name" brand. 
+
+The manager estimates that if she     
+sells the "house" brand for x dollars and the "name" brand for y dollars, she will be able to sell $81-21x+17y$ units of the 
+"house" brand and $40+11x-23y$ units of the "name" brand.
+
+Step 1. Find the revenue function R(x, y).
+
+Revenue is the total amount of money brought in before overhead costs are removed. This will be number of units sold time price per unit.
+
+$R(x,y) = x(81-21x+17y) + y(40+11x-23y)$
+
+Step 2.What is the revenue if she sells the "house" brand for \$2.30 and the "name" brand for \$4.10?
+
+$$
+R(x,y) = 2.3*(81-21*2.3+17*4.1)+4.1*(40+11*2.3-23*4.1)\\
+R(x,y)  = 116.62\space USD 
+$$
+
+## 4. A company has a plant in Los Angeles and a plant in Denver. 
+The firm is committed to produce a total of 96 units of a  product each week. The total weekly cost is given by $C(x,y) = \frac{1}{6}x^2 + \frac{1}{6}y^2 +7x +25y +700$, where x is the number of  units produced in Los Angeles and y is the number of units produced in Denver. How many units should be produced in each plant to minimize the total weekly cost?
+
+We need to find the critical points of C(x,y) and we need to make sure they make sense (i.e, both x and y are positive numbers) and that those critical numbers are minima. Since we have a constraint on x and y, we can use this to reduce the cost function to a single variable. 
+
+$$
+x+y=96 \\
+C(x,y) = \frac{1}{6}x^2 + \frac{1}{6}y^2 +7x +25y +700 \\
+C(x) = \frac{1}{6}x^2 + \frac{1}{6}(96-x)^2 +7x +25(96-x) +700\\
+C(x) = \frac{1}{6}x^2 + 1536-32x + \frac{1}{6}x^2 +7x +2400-25x +700 \\
+C(x) = \frac{1}{3}x^2 -50x +4636 \\
+\frac{dC}{dx} = \frac{2}{3}x -50 =0 \\
+x = 75 \\
+\frac{d^2C}{dx^2} = \frac{2}{3}
+$$
+
+Since the Second Derivative is $>0$,  $x=75$ is a  relative minima.
+
+```{r graph, eval=TRUE}
+curve(1/3*x^2-50*x+4636, from = 0, to = 150)
+```
+
+From the graph of the single dimension curve, we can see the critical point is an absolute minimum at $x=75$ as expected. This means we want to make 75 units in L.A. and 21 in Denver.
+
+## 5. Evaluate the double integral on the given region.
+
+$$
+A = \int_2^4\int_2^4 e^{(8x + 3y)} dA \\
+A = \int_2^4\int_2^4 e^{8x} e^{3y} dxdy \\
+A = \int_2^4 e^{8x}dx * \int_2^4 e^{3y}dy \\
+A = \frac{1}{8} e^{8x}\Big|_2^4 * \frac{1}{3} e^{3y}\Big|_2^4 \\
+A = \frac{1}{24}e^{8x}\Big|_2^4 *  e^{3y}\Big|_2^4 \\
+A = \frac{1}{24} (e^{32} - e^{16} )( e^{12} - e^{6})\\
+A = 534,156,100,000,000,000
+$$
+```{r calc, eval=TRUE}
+1/24*((exp(32)+exp(16))*(exp(12) - exp(6)))
+```
