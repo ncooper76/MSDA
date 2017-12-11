@@ -1,0 +1,933 @@
+---
+title: "Analysis of Global Energy Usage"
+author: "Chunhui Zhu & Nathan Cooper"
+date: "November 29, 2017"
+header-includes:
+   \usepackage{ulem}
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Analysis of Global Energy Usage
+
+
+Global Energy efficiency usage already challenges our lives. As the human population and economy grows, so does our demand for energy. Some energy from fossil fuels (like Coal, Peat and Oil Shale) unfortunately are not replaceable energy, yet currently 80% global energy comes from burning fossil fuels. An estimation for fossil fuel reserves is only 50-120 years.  In addition, burning fossil fuels product more carbon dioxide, which contributes to global warming. NASA Earth observatory predicted the global warming for next century is at least 20 times faster.
+{[link](http://developmenteducation.ie/feature/the-energy-debate-renewable-energy-cannot-replace-fossil-fuels/), April, 21, 2017} Since then we found the impact of shortage energy for our lives, we already spent a decade to look for renewable energy and better solution for energy conservation.
+
+
+$\textbf{Goals:}$ 
+
+
+1.	We propose to analyze the changes in global energy usage (replacement and replacement energy), per capital use and energy trading flows to better understand the progress for energy efficiency usage. we will study what actions need to be taken to ensure that economic stability can be maintained in the future.
+
+
+2.	We will observe two largest population countries China and Indian energy consuming, since they are developing technology and economic in their highest speed. These two countries face more energy problems than other countries. In our research of data sets, we are going to discover what problem they are facing and what strategy they use. 
+
+
+3.	To discover which countries are energy suppliers / consumer, what relationship they bound together. 
+
+
+$\textbf{Objects:}$
+
+The analysis of 1990-2014 import and export energy trade and energy consumption focus on 2017 top 10 world economies,USA,China,Japan,Germany,UK,India,France,Brazil,Italy,Canada.
+
+```{r}
+suppressMessages(suppressWarnings(library('tidyverse')))
+suppressMessages(suppressWarnings(library('data.table')))
+suppressMessages(suppressWarnings(library('dplyr')))
+suppressMessages(suppressWarnings(library('ggplot2')))
+suppressMessages(suppressWarnings(library('reshape2')))
+suppressMessages(suppressWarnings(library('scales')))
+suppressMessages(suppressWarnings(library('rmarkdown')))
+suppressMessages(suppressWarnings(library('rvest')))
+suppressMessages(suppressWarnings(library('stringr')))
+suppressMessages(suppressWarnings(library('httr')))
+suppressMessages(suppressWarnings(library('jsonlite')))
+```
+
+
+
+**Methods:**
+
+Based on Energy-Questionnaire-Guidelines, all category can be divided into five energy produts: Coal_Peat_Oil.Shale, Oil, Nautal_Gas, Electricity_heat, Biofuels_Waste. Every subcategory for each product of all natural source are listed in the guidelines. We used join function to find the component of products by category from data set "all_energy_statistics" which can match the subcategpry for every defined product from data set "fields". 
+
+To get data set for import/export trade data for these five products, we use 'grepl' fuction to look for the words "import" and "export" in the column "commodity_transaction". We also check if NA exists in after joined tables. Then we found "Electricity & heat" is not exist in import and export trade. Therefore the following, we only look for the other fours products transation.
+
+We fine the total electricity consumption for top ten countries and the 10-year growth in 2004-2014.From comparing how much changes. We also find 2014 consumption by households per capital in these countries. We use the data of population from Wiki website  {[link](https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_population)}. We calculate per capital consumption by using total_electricity (KW, million)/population of the country. 
+
+
+###Data Wrangling
+
+**The five productes Coal_Peat_Oil.Shale, Oil, Nautal_Gas, Electricity_heat and Biofuels_Waste classify in Energy-Questionnaire-Guidelines. **
+```{r}
+#use fread function to read in large table
+raw<-fread('all_energy_statistics.csv')
+
+#eleminate low column 'footnote' for the survey
+allEnergy<-raw[,-6] 
+
+#reduce the duplicated discription in 'commodity_transaction' column
+allEnergy$commodity_transaction<-gsub(".*-", "", allEnergy$commodity_transaction) 
+
+#rename 'commodity_transaction' column as 'transaction' 
+names(allEnergy)[names(allEnergy) == 'commodity_transaction'] <- 'transaction' 
+
+#lowcase for the 'transaction' column
+allEnergy$transaction <- tolower(allEnergy$transaction)
+
+#convert dbl type to integer type for 'quantity'
+allEnergy$quantity<-as.integer(allEnergy$quantity)
+
+#select top 10 economic countries
+subEnergy<- allEnergy[allEnergy$country_or_area %in% c("United States","China","Japan","Germany","United Kingdom","India","France","Brazil","Italy","Canada"), ]
+
+fields<-fread('fields.csv')
+head(fields)
+
+Coal_Peat_Oil.Shale<-fields[,1]
+Oil<-fields[,2]
+Nautal_Gas<-fields[,3]
+Electricity_heat<-fields[,4]
+Biofuels_Waste<-fields[,5]
+
+CPO<-left_join(Coal_Peat_Oil.Shale,subEnergy, by = c("Coal_Peat_Oil.Shale"="category"))
+OIL<-left_join(Oil,subEnergy,by = c("Oil"="category"))
+NG<-left_join(Nautal_Gas, subEnergy,by = c("Nautal Gas"="category"))
+EH<-left_join(Electricity_heat,subEnergy, by = c("Electricity & heat"="category"))
+BW<-left_join(Biofuels_Waste,subEnergy, by = c("Biofuels & Waste"="category"))
+
+
+impCPO<-CPO[grepl("imports",CPO[,3])==TRUE,]
+impOIL<-OIL[grepl("imports",OIL[,3])==TRUE,]
+impNG<-NG[grepl("imports",NG[,3])==TRUE,]
+impBW<-BW[grepl("imports",BW[,3])==TRUE,]
+
+expCPO<-CPO[grepl("exports",CPO[,3])==TRUE,]
+expOIL<-OIL[grepl("exports",OIL[,3])==TRUE,]
+expNG<-NG[grepl("exports",NG[,3])==TRUE,]
+expBW<-BW[grepl("exports",BW[,3])==TRUE,]
+
+```
+
+
+### Loading the data
+
+We will begin by loading the data obtained from kaggle.com[^1] into a table data frame.
+
+```{r load, eval=TRUE}
+suppressMessages(suppressWarnings(library('tidyverse')))
+energy <- 'all_energy_statistics.csv' %>% read.csv(stringsAsFactors = FALSE) %>% tbl_df()
+head(energy)
+nrow(energy)
+ncol(energy)
+```
+
+With over 1,000,000 rows, sub-setting these data seems like a reasonable approach to analyzing them, as using the whole set would tax our computer resources. To get a good idea of where to subset, we can look at countries/areas and commodities and transactions.
+
+
+### Exploring the Data - Commodities, Transactions, and Catagories
+
+The data is labeled by Countries, Commodity-Transactions, and Categories. This is a good place to start looking for ways to sub-set the data.
+
+```{r explore,eval=TRUE}
+country <- energy[,1] %>% unique() %>% arrange(country_or_area)
+country
+comm_trans <-energy[,2]  %>% unique() %>%arrange(commodity_transaction)
+nrow(comm_trans)
+head(comm_trans)
+tail(comm_trans)
+```
+
+We have 243 countries and areas and 2336 categories of commodities and transactions. The commodity-transactions are listed first by the commodity, the object being used, and then by the transactions, how that object is used. These are separated by a dash. We can use a regular expression to separate the commodities from the transactions. 
+
+```{r comm, eval=TRUE}
+suppressMessages(suppressWarnings(library(stringr)))
+#energy[,2] <- energy[,2] %>% tolower() These seemed to stall Rstudio. I look for another way to fix this.
+#energy[,2] <- energy[,2] %>% str_replace("hrad","hard") #one of the cells had a spelling error
+#tail(energy[,2])
+comm_trans<- comm_trans %>% separate("commodity_transaction", c('commodity', 'transaction'), " - ")
+comm <- comm_trans[,1] %>% unique() 
+comm # There are duplicates due to cases, spelling errors.
+for(i in 1:nrow(comm[,1])){ # create a loop to get rid of case duplicates
+  comm[i,1] <- comm[i,1] %>% tolower()
+  comm[i,1] <- comm[i,1] %>% str_replace("hrad","hard") #one of the cells had a spelling error
+}
+comm <- comm %>% unique()
+comm
+transaction <- comm_trans[,2] %>% unique()
+for(i in 1:nrow(transaction[,1])){ # create a loop to get rid of case duplicates
+  transaction[i,1] <- transaction[i,1] %>% tolower()
+}
+transaction <- transaction %>% unique()
+transaction
+category <- energy[,7] %>% unique()
+category
+```
+
+We have now shortened our lists to 97 commodities, 212 transactions and 67 catagories. These can be used with tidyr functions to create our subsets.
+
+### Subsetting Data
+
+We can see that the above data is very large and will be difficult to deal with. Initially we ran some loops on the entire data set, but they took close to an hour to complete. This is not very practical, and sub setting the data into smaller parts may make these data more manageable.
+
+According to www.investopedia.com [^2], the top 10 world economies are:
+
+1) USA
+2) China
+3) Japan
+4) Germany
+5) UK
+6) India
+7) France
+8) Brazil
+9) Italy
+10) Canada
+
+We will use these to break the data into more manageable blocks By Country:
+
+```{r subsets, eval=TRUE}
+#1 USA
+usa <- energy %>% filter(country_or_area == "United States")
+nrow(usa)
+head(usa)
+#2
+china <- energy %>% filter(country_or_area == "China")
+nrow(china)
+head(china)
+#3
+japan <- energy %>% filter(country_or_area == "Japan")
+nrow(japan)
+head(japan)
+#4
+germany <- energy %>% filter(country_or_area == "Germany")
+nrow(germany)
+head(germany)
+#5
+uk <- energy %>% filter(country_or_area == "United Kingdom")
+nrow(uk)
+head(uk)
+#6
+india <- energy %>% filter(country_or_area == "India")
+nrow(india)
+head(india)
+#7
+france <- energy %>% filter(country_or_area == "France")
+nrow(france)
+head(france)
+#8
+brazil <- energy %>% filter(country_or_area == "Brazil")
+nrow(brazil)
+head(brazil)
+#9
+italy <- energy %>% filter(country_or_area == "Italy")
+nrow(italy)
+head(italy)
+#10 
+canada <- energy %>% filter(country_or_area == "Canada")
+nrow(canada)
+head(canada)
+```
+
+
+We will use these subsets to create futher subsets as we proform our anaysis.
+
+### Transforming Units
+
+Units of measure are also of interest. Solid fuels will be measured by mass, and liquid and gasses by volume. Furthermore energy units can be measured in Kilowatt-hours, Power*time is Energy, or Joules, a direct measure of energy.
+
+```{r, units, eval=TRUE}
+en_units <- energy[,4] %>% unique() %>% arrange(unit)
+en_units
+```
+
+Kilowatt hours can be converted into Joules by the following conversion:
+$$
+\frac{1 KW*hr}{1}*\frac{3600 s}{1 hr}*\frac{1000 J}{1 KW*s} = 3,600,000 J \\
+1 TJ = 1*10^{12} J \\
+\frac{3.6x10^6 J}{1} * \frac{1 TJ}{1*10^{12}J} = 3.6*10^{-6} TJ \\
+1 TJ = \frac{1KW*hr}{3.6*10^{-6}} = \frac{1*10^6 KW*hr}{3.6}
+$$
+
+Note that KW\*hr are measured in millions, such that $1*10^6\space KW*hr = 3.6 TJ$, according to the above conversion. So to convert those measurements into TJ we need simply divide the Millions of $KW*hr$ by 3.6 according to the above conversion.
+
+```{r, unit_convert, eval=TRUE}
+# This seems to stall out my PC, so it is included, but not used.
+#for(i in 1:nrow(energy)){
+ # if(energy[i,4] == "Kilowatt-hours, million"){
+  #  energy[i,5] = energy[i,5]/3.6
+   # energy[i,4] = "Terajoules"  
+#}
+ # }
+```
+
+```{r, units2, eval=TRUE}
+#This isn't useful given the above loop is too slow.
+#en_units <- energy[,4] %>% unique() %>% arrange(unit)
+#en_units
+```
+For any conversion of mass or volume, specific energy (Energy per mass) or Energy Density (Energy per Volume) must be factored into the measurement. The efficiency of the method of energy production must also be accounted for.
+
+
+##Typys of Commodities
+
+
+**Non-renewable resources**
+
+![](Non-renewable-resources.jpg)
+
+**Renewable resources**
+
+![](biofuels.jpg)
+
+
+
+##Part I: Electrical Power Production
+
+We can use the categories: "total_electricity", "nuclear_electricity", "thermal_electricity", "solar_electricity", "tide_wave_and_ocean_electricity", and "hydro" to analyze where the top 10 countries get their electricity.
+
+### USA
+
+```{r, usa_elec, eval=TRUE}
+suppressMessages(suppressWarnings(library(ggplot2)))
+usa_total_elec <- usa %>% filter(category == "total_electricity") %>% select(commodity_transaction, year, quantity)
+usa_total_elec <- usa_total_elec %>% spread(year, quantity, fill = 0) 
+usa_total_elec[5,1] <- "Total"
+usa_total_elec[5,-1] <- colSums(usa_total_elec[-5,-1])
+usa_total_elec <- usa_total_elec %>% gather("year", "quantity", 2:26, convert=TRUE) %>% filter(commodity_transaction == "Total") 
+usa_total_elec ## these numbers are less than the total thermal electrcity produced, we'll need to reevaluate.
+usa_nuc_elec <- usa %>% filter(category == "nuclear_electricity") %>% select(year, quantity)
+usa_nuc_elec
+usa_solar_elec <- usa %>% filter(category == "solar_electricity") %>% select(year, quantity)
+usa_solar_elec
+usa_therm_elec <- usa %>% filter(category == "thermal_electricity") %>% select(year, quantity)
+usa_therm_elec
+usa_hydro_elec <- usa %>% filter(category == "hydro") %>% select(year, quantity)
+usa_hydro_elec
+usa_wave_elec <- usa %>% filter(category == "tide_wave_and_ocean_electricity") %>% select(year, quantity)
+usa_wave_elec # No wave generation reported in the US.
+## We'll redifine total electricity by joining  table data frames.
+usa_total_elec <- usa_therm_elec %>% left_join(usa_nuc_elec, by = "year")
+#usa_total_elec <- usa_total_elec %>% left_join(usa_solar_elec, by = "year") #not included in EIA total
+#usa_total_elec <- usa_total_elec %>% left_join(usa_hydro_elec, by = "year") #not included in EIA total
+usa_total_elec <- usa_total_elec %>% mutate(total = rowSums(.[2:3]))
+usa_total_elec
+ggplot(NULL, aes(y=quantity,x=year))+ 
+    geom_point(data=usa_total_elec, aes(y=total,x=year), color = "black")+
+    geom_point(data=usa_nuc_elec, aes(y=quantity,x=year), color = "blue")+
+    geom_point(data=usa_solar_elec, aes(y=quantity,x=year), color = "yellow3")+
+    geom_point(data=usa_therm_elec, aes(y=quantity,x=year), color = "red") +
+    geom_point(data=usa_hydro_elec, aes(y=quantity,x=year), color = "cyan")+
+    scale_y_continuous(labels = comma)
+    
+```
+
+American electrical production has increased by about 36% over the past 25 years, largely by adding fossil fuel capacity. Electric production seems to be relatively steady since about 2005.
+
+Note also that total electricity is somehow less than the amount of thermal electricity, when we would expect it to be greater than. This could be because the totals for thermal, nuclear, hydro, etc are based on how much resource goes into the process, not how much comes out, so thermodynamic efficiency is not taken into account. It could also be because the total has no category for at-home private use and that is a majority of power consumption, or the units for some of the categories are wrong, TJ instead of KW*hr, million or visa versa.
+
+We will exclude the kaggle total from further analysis, and replace it by adding the subcategories.
+
+### Cross-Checking USA electrical production
+
+```{r api_start, eval=TRUE, include=FALSE}
+suppressMessages(suppressWarnings(library('httr')))
+suppressMessages(suppressWarnings(library('jsonlite')))
+USA <-"http://api.eia.gov/series/?api_key=864713a8817430093cd98489f419ce1a&series_id=ELEC.GEN.ALL-US-98.A"
+```
+
+The EIA has electrical production for the whole USA from 2001 to 2016. The units are in thousands of megawatt*hours.
+
+$$
+1000 MW*hr = 1000*10^6 W*hr = 10^9 W*hr \\
+10^6 KW*hr = 10^6*1000 W*hr = 10^9 W*hr
+$$
+Thousands of Megawatt\*hours are equivalent to millions of Kilowatts\*hours. We do not need to convert these data to include with the original set.
+
+The URL[^3] contains the API code so they are contained in a hidden line of code.
+
+```{r eia_data, eval=TRUE}
+eia_usa <- USA %>%  fromJSON(simplifyDataFrame = TRUE) # Entire United States, the url is saved to 'USA'
+eia_usa_df <- eia_usa$series$data %>% data.frame()
+eia_usa_df$X1 <- eia_usa_df$X1 %>% as.character() %>% as.integer()
+eia_usa_df$X2 <- eia_usa_df$X2 %>% as.character() %>% as.numeric()
+eia_usa_df <- eia_usa_df %>% rename(year = X1, quantity = X2)
+eia_usa_df
+ggplot(NULL, aes(y=quantity,x=year))+ 
+    geom_point(data=eia_usa_df, aes(y=quantity,x=year), color = "black", shape = 4)+
+    geom_point(data=usa_total_elec, aes(y=total,x=year), color = "black")+
+    geom_point(data=usa_nuc_elec, aes(y=quantity,x=year), color = "blue")+
+    geom_point(data=usa_solar_elec, aes(y=quantity,x=year), color = "yellow3")+
+    geom_point(data=usa_therm_elec, aes(y=quantity,x=year), color = "red") +
+    geom_point(data=usa_hydro_elec, aes(y=quantity,x=year), color = "cyan")+ 
+    scale_y_continuous(labels = comma)
+usa_total_elec <- usa_total_elec[,-4] #drop the previous total
+usa_total_elec <- usa_total_elec %>% left_join(usa_solar_elec, by = "year") #not included in EIA total
+usa_total_elec <- usa_total_elec %>% left_join(usa_hydro_elec, by = "year") #not included in EIA total
+usa_total_elec <- usa_total_elec %>% mutate(total = rowSums(.[2:5]))
+usa_total_elec #This adds all catagories together.
+```
+
+We see that the data from EIA.gov trends with the data collected from kaggle.com, including the same dip in electrical production in the middle of the Great Recession of 2007-2012. The offsets between the EIA data in black "x" and the kaggle.com data in black dots could be due to different sampling techniques. I removed hydro electric and solar from the kaggle.com data set and the agreement between the two sets is almost exact. It appears the the EIA was only counting nuclear-thermal and fossil-fuel-thermal electrical generation.
+
+### China
+
+```{r, china_elec, eval=TRUE}
+china_nuc_elec <- china %>% filter(category == "nuclear_electricity")%>% select(year, quantity)
+china_nuc_elec
+china_solar_elec <- china %>% filter(category == "solar_electricity")%>% select(year, quantity) 
+china_solar_elec
+china_therm_elec <- china %>% filter(category == "thermal_electricity")%>% select(year, quantity)
+china_therm_elec
+china_hydro_elec <- china %>% filter(category == "hydro")%>% select(year, quantity)
+china_hydro_elec
+china_wave_elec <- china %>% filter(category == "tide_wave_and_ocean_electricity")%>% select(year, quantity)
+china_wave_elec # No wave generation reported in China.
+#Create a data frame for calculating total electrical output.
+china_total_elec <- china_therm_elec %>% left_join(china_nuc_elec, by = "year")
+china_total_elec <- china_total_elec %>% left_join(china_solar_elec, by = "year") 
+china_total_elec <- china_total_elec %>% left_join(china_hydro_elec, by = "year")
+china_total_elec[is.na(china_total_elec)] <- 0 #China had missing data.
+china_total_elec <- china_total_elec %>% mutate(total = rowSums(.[2:5]))
+china_total_elec
+ggplot(NULL, aes(y=quantity,x=year))+ 
+    geom_point(data=china_total_elec, aes(y=total,x=year), color = "black")+
+    geom_point(data=china_nuc_elec, aes(y=quantity,x=year), color = "blue")+
+    geom_point(data=china_solar_elec, aes(y=quantity,x=year), color = "yellow3")+
+    geom_point(data=china_therm_elec, aes(y=quantity,x=year), color = "red") +
+    geom_point(data=china_hydro_elec, aes(y=quantity,x=year), color = "cyan")+
+    scale_y_continuous(labels = comma)
+    
+```
+
+China's economic explosion of the last 20 years has been largely powered by fossil fuels, with some hydro-electricity. Nuclear and Solar make up only a small fraction. There looks like a slight change in the trend of China's electrical production during the Great Recession, however the trend is still increasing.
+
+### Japan
+
+
+```{r, japan_elec, eval=TRUE}
+japan_nuc_elec <- japan %>% filter(category == "nuclear_electricity")%>% select(year, quantity)
+japan_nuc_elec
+japan_solar_elec <- japan %>% filter(category == "solar_electricity")%>% select(year, quantity)
+japan_solar_elec
+japan_therm_elec <- japan %>% filter(category == "thermal_electricity")%>% select(year, quantity)
+japan_therm_elec
+japan_hydro_elec <- japan %>% filter(category == "hydro")%>% select(year, quantity)
+japan_hydro_elec
+japan_wave_elec <- japan %>% filter(category == "tide_wave_and_ocean_electricity")%>% select(year, quantity)
+japan_wave_elec # No wave generation reported in Japan.
+#Create a data frame for calculating total electrical output.
+japan_total_elec <- japan_therm_elec %>% left_join(japan_nuc_elec, by = "year")
+japan_total_elec <- japan_total_elec %>% left_join(japan_solar_elec, by = "year") 
+japan_total_elec <- japan_total_elec %>% left_join(japan_hydro_elec, by = "year")
+japan_total_elec[is.na(japan_total_elec)] <- 0 #for had missing data.
+japan_total_elec <- japan_total_elec %>% mutate(total = rowSums(.[2:5]))
+japan_total_elec
+ggplot(NULL, aes(y=quantity,x=year))+
+    geom_point(data=japan_total_elec, aes(y=total,x=year), color = "black")+
+    geom_point(data=japan_nuc_elec, aes(y=quantity,x=year), color = "blue")+
+    geom_point(data=japan_solar_elec, aes(y=quantity,x=year), color = "yellow3")+
+    geom_point(data=japan_therm_elec, aes(y=quantity,x=year), color = "red") +
+    geom_point(data=japan_hydro_elec, aes(y=quantity,x=year), color = "cyan")+
+    scale_y_continuous(labels = comma)
+    
+```
+
+We can see that after the Fukishima nuclear accident (2011), Japan brought most of it's nuclear power off-line and made up for the loss with fossil-fuels. Like the US, we also see a dip corresponding to the Great Recession.
+
+
+
+### Germany
+
+```{r, germ_elec, eval=TRUE}
+germ_nuc_elec <- germany %>% filter(category == "nuclear_electricity")%>% select(year, quantity)
+germ_nuc_elec
+germ_solar_elec <- germany %>% filter(category == "solar_electricity")%>% select(year, quantity)
+germ_solar_elec
+germ_therm_elec <- germany %>% filter(category == "thermal_electricity")%>% select(year, quantity)
+germ_therm_elec
+germ_hydro_elec <- germany %>% filter(category == "hydro")%>% select(year, quantity)
+germ_hydro_elec
+germ_wave_elec <- germany %>% filter(category == "tide_wave_and_ocean_electricity")%>% select(year, quantity)
+germ_wave_elec # No wave generation reported in Germany.
+#Create a data frame for calculating total electrical output.
+germ_total_elec <- germ_therm_elec %>% left_join(germ_nuc_elec, by = "year")
+germ_total_elec <- germ_total_elec %>% left_join(germ_solar_elec, by = "year") 
+germ_total_elec <- germ_total_elec %>% left_join(germ_hydro_elec, by = "year")
+germ_total_elec[is.na(germ_total_elec)] <- 0 #for had missing data.
+germ_total_elec <- germ_total_elec %>% mutate(total = rowSums(.[2:5]))
+germ_total_elec
+ggplot(NULL, aes(y=quantity,x=year))+ 
+    geom_point(data=germ_total_elec, aes(y=total,x=year), color = "black")+
+    geom_point(data=germ_nuc_elec, aes(y=quantity,x=year), color = "blue")+
+    geom_point(data=germ_solar_elec, aes(y=quantity,x=year), color = "yellow3")+
+    geom_point(data=germ_therm_elec, aes(y=quantity,x=year), color = "red") +
+    geom_point(data=germ_hydro_elec, aes(y=quantity,x=year), color = "cyan")+
+    scale_y_continuous(labels = comma)
+    
+```
+
+Germany's fossil fuel based electrical out has held more or less constant, it does appear that Germany is replacing nuclear based electricity  with solar. Like the US, we also see a dip corresponding to the Great Recession.
+
+### UK
+
+```{r, uk_elec, eval=TRUE}
+uk_nuc_elec <- uk %>% filter(category == "nuclear_electricity")%>% select(year, quantity)
+uk_nuc_elec
+uk_solar_elec <- uk %>% filter(category == "solar_electricity")%>% select(year, quantity)
+uk_solar_elec
+uk_therm_elec <- uk %>% filter(category == "thermal_electricity")%>% select(year, quantity)
+uk_therm_elec
+uk_hydro_elec <- uk %>% filter(category == "hydro")%>% select(year, quantity)
+uk_hydro_elec
+uk_wave_elec <- uk %>% filter(category == "tide_wave_and_ocean_electricity")%>% select(year, quantity)
+uk_wave_elec 
+#Create a data frame for calculating total electrical output.
+uk_total_elec <- uk_therm_elec %>% left_join(uk_nuc_elec, by = "year")
+uk_total_elec <- uk_total_elec %>% left_join(uk_solar_elec, by = "year") 
+uk_total_elec <- uk_total_elec %>% left_join(uk_hydro_elec, by = "year")
+uk_total_elec <- uk_total_elec %>% left_join(uk_wave_elec, by = "year")
+uk_total_elec[is.na(uk_total_elec)] <- 0 #for missing data.
+uk_total_elec <- uk_total_elec %>% mutate(total = rowSums(.[2:6]))
+uk_total_elec
+ggplot(NULL, aes(y=quantity,x=year))+ 
+    geom_point(data=uk_total_elec, aes(y=total,x=year), color = "black")+
+    geom_point(data=uk_nuc_elec, aes(y=quantity,x=year), color = "blue")+
+    geom_point(data=uk_solar_elec, aes(y=quantity,x=year), color = "yellow3")+
+    geom_point(data=uk_therm_elec, aes(y=quantity,x=year), color = "red") +
+    geom_point(data=uk_hydro_elec, aes(y=quantity,x=year), color = "cyan") +
+    geom_point(data=uk_wave_elec, aes(y=quantity,x=year), color = "violet")+
+    scale_y_continuous(labels = comma)
+    
+```
+
+Total UK electrical production seems to fluctuate sinusoidal since 1990 with a period of about 50 years, based on the graph. We seemed to have captured half a period over 25 years. Like the US, we also see a dip corresponding to the Great Recession. It looks like the UK has not recovered eletrical prodcution as of 2014.
+
+###  India
+
+```{r, india_elec, eval=TRUE}
+india_nuc_elec <- india %>% filter(category == "nuclear_electricity")%>% select(year, quantity)
+india_nuc_elec
+india_solar_elec <- india %>% filter(category == "solar_electricity")%>% select(year, quantity)
+india_solar_elec
+india_therm_elec <- india %>% filter(category == "thermal_electricity")%>% select(year, quantity)
+india_therm_elec
+india_hydro_elec <- india %>% filter(category == "hydro")%>% select(year, quantity)
+india_hydro_elec
+india_wave_elec <- india %>% filter(category == "tide_wave_and_ocean_electricity")%>% select(year, quantity)
+india_wave_elec # No wave generation reported in India.
+#Create a data frame for calculating total electrical output.
+india_total_elec <- india_therm_elec %>% left_join(india_nuc_elec, by = "year")
+india_total_elec <- india_total_elec %>% left_join(india_solar_elec, by = "year") 
+india_total_elec <- india_total_elec %>% left_join(india_hydro_elec, by = "year")
+india_total_elec <- india_total_elec %>% left_join(india_wave_elec, by = "year")
+india_total_elec[is.na(india_total_elec)] <- 0 #for missing data.
+india_total_elec <- india_total_elec %>% mutate(total = rowSums(.[2:6]))
+india_total_elec
+ggplot(NULL, aes(y=quantity,x=year))+ 
+    geom_point(data=india_total_elec, aes(y=total,x=year), color = "black")+
+    geom_point(data=india_nuc_elec, aes(y=quantity,x=year), color = "blue")+
+    geom_point(data=india_solar_elec, aes(y=quantity,x=year), color = "yellow3")+
+    geom_point(data=india_therm_elec, aes(y=quantity,x=year), color = "red") +
+    geom_point(data=india_hydro_elec, aes(y=quantity,x=year), color = "cyan")+
+    scale_y_continuous(labels = comma)
+    
+```
+
+Much like China, India has greatly increased it's electricity output over the last 25 years by adding fossil fuel capacity. However, India does not appear to be as affected by the Great Recession as other countries. Given that approximately half of India's landmass is in the tropics, it is surprising that India has not brought more Solar online.
+
+### France
+
+```{r, france_elec, eval=TRUE}
+fr_nuc_elec <- france %>% filter(category == "nuclear_electricity")%>% select(year, quantity)
+fr_nuc_elec
+fr_solar_elec <- france %>% filter(category == "solar_electricity")%>% select(year, quantity)
+fr_solar_elec
+fr_therm_elec <- france %>% filter(category == "thermal_electricity")%>% select(year, quantity)
+fr_therm_elec
+fr_hydro_elec <- france %>% filter(category == "hydro")%>% select(year, quantity)
+fr_hydro_elec
+fr_wave_elec <- france %>% filter(category == "tide_wave_and_ocean_electricity")%>% select(year, quantity)
+fr_wave_elec 
+#Create a data frame for calculating total electrical output.
+fr_total_elec <- fr_therm_elec %>% left_join(fr_nuc_elec, by = "year")
+fr_total_elec <- fr_total_elec %>% left_join(fr_solar_elec, by = "year") 
+fr_total_elec <- fr_total_elec %>% left_join(fr_hydro_elec, by = "year")
+fr_total_elec <- fr_total_elec %>% left_join(fr_wave_elec, by = "year")
+fr_total_elec[is.na(fr_total_elec)] <- 0 #for missing data.
+fr_total_elec <- fr_total_elec %>% mutate(total = rowSums(.[2:6]))
+fr_total_elec
+ggplot(NULL, aes(y=quantity,x=year))+ 
+    geom_point(data=fr_total_elec, aes(y=total,x=year), color = "black")+
+    geom_point(data=fr_nuc_elec, aes(y=quantity,x=year), color = "blue")+
+    geom_point(data=fr_solar_elec, aes(y=quantity,x=year), color = "yellow3")+
+    geom_point(data=fr_therm_elec, aes(y=quantity,x=year), color = "red") +
+    geom_point(data=fr_hydro_elec, aes(y=quantity,x=year), color = "cyan") +
+    geom_point(data=fr_wave_elec, aes(y=quantity,x=year), color = "violet")+
+    scale_y_continuous(labels = comma)
+    
+```
+
+France is the only country we examined with the majority of its power generated by nuclear. This might make it the only top world economy that is a net energy exporter than an importer. It is also the only major economy that is decreasing fossil fuel based electricity. The difference seems to be made up for by hydro and nuclear power. Like the US, we also see a dip corresponding to the Great Recession.
+
+
+### Brazil
+
+```{r, brazil_elec, eval=TRUE}
+braz_nuc_elec <- brazil %>% filter(category == "nuclear_electricity")%>% select(year, quantity)
+braz_nuc_elec
+braz_solar_elec <- brazil %>% filter(category == "solar_electricity")%>% select(year, quantity)
+braz_solar_elec
+braz_therm_elec <- brazil %>% filter(category == "thermal_electricity")%>% select(year, quantity)
+braz_therm_elec
+braz_hydro_elec <- brazil %>% filter(category == "hydro")%>% select(year, quantity)
+braz_hydro_elec
+braz_wave_elec <- brazil %>% filter(category == "tide_wave_and_ocean_electricity")%>% select(year, quantity)
+braz_wave_elec # No wave generation reported.
+#Create a data frame for calculating total electrical output.
+braz_total_elec <- braz_therm_elec %>% left_join(braz_nuc_elec, by = "year")
+braz_total_elec <- braz_total_elec %>% left_join(braz_solar_elec, by = "year") 
+braz_total_elec <- braz_total_elec %>% left_join(braz_hydro_elec, by = "year")
+braz_total_elec <- braz_total_elec %>% left_join(braz_wave_elec, by = "year")
+braz_total_elec[is.na(braz_total_elec)] <- 0 #for missing data.
+braz_total_elec <- braz_total_elec %>% mutate(total = rowSums(.[2:6]))
+braz_total_elec
+ggplot(NULL, aes(y=quantity,x=year))+ 
+    geom_point(data=braz_total_elec, aes(y=total,x=year), color = "black")+
+    geom_point(data=braz_nuc_elec, aes(y=quantity,x=year), color = "blue")+
+    geom_point(data=braz_solar_elec, aes(y=quantity,x=year), color = "yellow3")+
+    geom_point(data=braz_therm_elec, aes(y=quantity,x=year), color = "red") +
+    geom_point(data=braz_hydro_elec, aes(y=quantity,x=year), color = "cyan")+
+    scale_y_continuous(labels = comma)
+    
+```
+
+Brazil is the first country in our analysis that produces most of their electricity with renewable hydroelectric energy. Also, given Brazil's low latitudes; the Northern part of the country intersects the Equator, it is surprising that Germany has brought more Solar online. Brazil gets much more direct sunlight.
+In terms of sustainability it looks like Brazil is replacing hydroelectric plants with fossil fuels. There may be short-term economic benefit to this, but in the long run this is bad for energy sustainability.
+
+### Italy
+
+```{r, italy_elec, eval=TRUE}
+it_nuc_elec <- italy %>% filter(category == "nuclear_electricity")%>% select(year, quantity)
+it_nuc_elec #Italy has no Nucleat capacity
+it_solar_elec <- italy %>% filter(category == "solar_electricity")%>% select(year, quantity)
+it_solar_elec
+it_therm_elec <- italy %>% filter(category == "thermal_electricity")%>% select(year, quantity)
+it_therm_elec
+it_hydro_elec <- italy %>% filter(category == "hydro")%>% select(year, quantity)
+it_hydro_elec
+it_wave_elec <- italy %>% filter(category == "tide_wave_and_ocean_electricity")%>% select(year, quantity)
+it_wave_elec # No wave generation reported.
+#Create a data frame for calculating total electrical output.
+it_total_elec <- it_therm_elec %>% left_join(it_nuc_elec, by = "year")
+it_total_elec <- it_total_elec %>% left_join(it_solar_elec, by = "year") 
+it_total_elec <- it_total_elec %>% left_join(it_hydro_elec, by = "year")
+it_total_elec <- it_total_elec %>% left_join(it_wave_elec, by = "year")
+it_total_elec[is.na(it_total_elec)] <- 0 #for missing data.
+it_total_elec <- it_total_elec %>% mutate(total = rowSums(.[2:6]))
+it_total_elec
+ggplot(NULL, aes(y=quantity,x=year))+ 
+    geom_point(data=it_total_elec, aes(y=total,x=year), color = "black")+
+    geom_point(data=it_nuc_elec, aes(y=quantity,x=year), color = "blue")+
+    geom_point(data=it_solar_elec, aes(y=quantity,x=year), color = "yellow3")+
+    geom_point(data=it_therm_elec, aes(y=quantity,x=year), color = "red") +
+    geom_point(data=it_hydro_elec, aes(y=quantity,x=year), color = "cyan") +
+    scale_y_continuous(labels = comma)
+    
+```
+
+Italy seems to be the hardest hit by the Great Recession. Their energy production decreases in 2007 and never recovers, similar to the UK. Italy also is bringing the $2^{nd}$ Solar online than other countries in the survey having 22,306 kw\*hr, million in 2014 compared to Germany's 36,056 kw\*hr, million.
+
+### Canada
+
+```{r, canada_elec, eval=TRUE}
+can_nuc_elec <- canada %>% filter(category == "nuclear_electricity")%>% select(year, quantity)
+can_nuc_elec
+can_solar_elec <- canada %>% filter(category == "solar_electricity")%>% select(year, quantity)
+can_solar_elec
+can_therm_elec <- canada %>% filter(category == "thermal_electricity")%>% select(year, quantity)
+can_therm_elec
+can_hydro_elec <- canada %>% filter(category == "hydro")%>% select(year, quantity)
+can_hydro_elec
+can_wave_elec <- canada %>% filter(category == "tide_wave_and_ocean_electricity")%>% select(year, quantity)
+can_wave_elec # No wave generation reported.
+#Create a data frame for calculating total electrical output.
+can_total_elec <- can_therm_elec %>% left_join(can_nuc_elec, by = "year")
+can_total_elec <- can_total_elec %>% left_join(can_solar_elec, by = "year") 
+can_total_elec <- can_total_elec %>% left_join(can_hydro_elec, by = "year")
+can_total_elec <- can_total_elec %>% left_join(can_wave_elec, by = "year")
+can_total_elec[is.na(can_total_elec)] <- 0 #for missing data.
+can_total_elec <- can_total_elec %>% mutate(total = rowSums(.[2:6]))
+can_total_elec
+ggplot(NULL, aes(y=quantity,x=year))+ 
+    geom_point(data=can_total_elec, aes(y=total,x=year), color = "black")+
+    geom_point(data=can_nuc_elec, aes(y=quantity,x=year), color = "blue")+
+    geom_point(data=can_solar_elec, aes(y=quantity,x=year), color = "yellow3")+
+    geom_point(data=can_therm_elec, aes(y=quantity,x=year), color = "red") +
+    geom_point(data=can_hydro_elec, aes(y=quantity,x=year), color = "cyan") +
+    geom_point(data=can_wave_elec, aes(y=quantity,x=year), color = "violet")+
+    scale_y_continuous(labels = comma)
+```
+
+Like Brazil, Canada gets most of its electricity from Hydro-electric plants. Also, we do see the Great Recession dip. It is also interesting to see that Canada seems to swap nuclear power and fossil fuel power.
+
+```{r can_thr_nuc, eval=TRUE}
+ggplot(can_total_elec, aes(y=quantity.y, x=quantity.x))+
+  geom_point(color="steelblue")+
+  geom_smooth(method = "lm")+
+  scale_y_continuous(labels = comma)
+cor.test(can_total_elec$quantity.x,can_total_elec$quantity.y, method = "pearson")
+```
+
+Upon further examination, Canada's anti-correlation between seems to be marginal, as it is significant at the 90% confidence level, but not the 95% confidence level.
+
+## Energy Analysis Conclusions
+
+We can look at power totals side by side:
+
+```{r total, eval=TRUE}
+countries<- c("USA", "China", "Japan", "Germany", "UK", "India", "France", "Brazil", "Italy", "Canada")
+totals<-matrix(as.numeric(c(usa_total_elec[1,6],china_total_elec[1,6],japan_total_elec[1,6], germ_total_elec[1,6],uk_total_elec[1,7], india_total_elec[1,7], fr_total_elec[1,7], braz_total_elec[1,7],it_total_elec[1,7],can_total_elec[1,7]), ncol = 1))
+barplot(t(totals),names.arg = countries, horiz = TRUE, cex.names= 0.75,las=1, xlab = "2014 Total Electical Production (10^6 kw*hr)")
+usa_china = totals[1,1]+totals[2,1]
+japan_thru_canada = sum(totals[3:10,1])
+totals2 <- matrix(c(usa_china,japan_thru_canada), ncol = 1)
+barplot(t(totals2), names.arg = c("USA and China", "Japan to Canada"), horiz = TRUE, cex.names = 0.5, las=1,xlab = "USA and China Compared to Total of Other Top 10 Economies (10^6 kw*hr)")
+```
+
+We can see that the USA and China combined produce much more electricity than other top 10 economies in 2014. We also found that only 3 countries use something other than fossil fuels as their primary power supply. These are Brazil (Hydro), Canada (Hydro), and France (Nuclear). 
+
+### Growth
+
+The growth of electrical production between 1990 and 2014 will be modeled by the ratio of electricity produced in 1990 to the amount of electricity produced in 2014.
+
+```{r growth, eval=TRUE}
+ratio <- c(as.numeric(usa_total_elec[1,6]/usa_total_elec[25,6]),
+            as.numeric(china_total_elec[1,6]/china_total_elec[25,6]),
+            as.numeric(japan_total_elec[1,6]/japan_total_elec[25,6]),
+            as.numeric(germ_total_elec[1,6]/germ_total_elec[24,6]),
+            as.numeric(uk_total_elec[1,7]/uk_total_elec[25,7]),
+            as.numeric(india_total_elec[1,7]/india_total_elec[25,7]),
+            as.numeric(fr_total_elec[1,7]/fr_total_elec[25,7]),
+            as.numeric(braz_total_elec[1,7]/braz_total_elec[25,7]),
+            as.numeric(it_total_elec[1,7]/it_total_elec[25,7]),
+            as.numeric(can_total_elec[1,7]/can_total_elec[25,7]))
+growth <- data.frame(countries,ratio ,stringsAsFactors = FALSE)
+growth <- growth %>%  arrange(desc(ratio))
+barplot(growth$ratio, names.arg = growth$countries,xlab = "Ratio of Electric Energy Generation 2014:1990" ,horiz = TRUE, cex.names = 0.75 ,las=1)
+```
+
+China India, and Brazil have also shown the most growth in electrical energy production and merit detailed analysis. The UK is the only top 10 economy to show a loss of electrical production in the 25 year period.
+
+
+
+
+##Part II: Product Import & export Outlook: 
+
+###1. Coal_Peat_Oil.Shale, Oil
+
+**Total Coal_Peat_Oil Net Trade (Export-Import):**
+
+Japan was the biggest buyer before 2011, with steady grew from 190,000 thousand metric tons in 1990, and had max import 250,000 in 2004, became constant after. China was exporting the product before 2008 and changed grew direction in a sudden. China became the largest buyer within four years, with max import above 300,000 2013. The following is India, third largest buyer showing strong grew in import after 2010. United States and Canada kept exporting all the time during 1990-2014. United States was the biggest seller in most of the time. Yet it reduced export amount from 1991, it was still the major supplier. After 2006, United States started to enlarge its export amount. Second suppler Canada kept 30,000-50,000 thousands metric tons per year, with steady export amount all the time. Germany, France, Italy and Brazil had constant small import each year.
+
+```{r}
+impCPO.country<-impCPO %>% group_by(country_or_area,year) %>% summarise(totalImport=sum(quantity)) 
+expCPO.country<-expCPO %>% group_by(country_or_area,year) %>% summarise(totalExport=sum(quantity)) 
+netCPO<-merge(impCPO.country,expCPO.country, c("country_or_area","year"))
+netCPO<-mutate(netCPO,netTransation=totalExport - totalImport)
+
+ggplot(data=netCPO, aes(x=year, y=netTransation, group = country_or_area, colour = country_or_area)) +
+    geom_line() +
+    geom_point( size=1, shape=10, fill="white")+
+    ggtitle("Total Coal_Peat_Oil.Shale net trade (Export-Import), Metric tons,thousand") +
+    scale_y_continuous(labels = comma)
+```
+
+
+###2. Oil 
+
+**Total Oil Net Trade: **
+
+United States is the largest buyer, kept grew amount from 360,000 thousand metric tons in 2009 and reached above 600,000 in 2005, then reduced the amount each year, yet it kept its first place until to 2014. Japan is the second largest buyer from 1990-2008, with steady import all the time, and slightly reduced the amount after 2010. China now becomes the biggest buyer in 2014, surpassed United States in 2014, and Japan in 2008. China had almost zero import before 1996, and had kept strong grew after. China imported 300,000 thousand metric tons oil in 2014. India also showed upward trend in importing more oil after 2005, from 200,000. Germany, Italy, France had constant import at around 100,000 per year, but started to reduce the amount after 2006. Canada is the only one country kept exporting oil at all the time, with small grew every year, and tended to increase the amount after 2010. United Kingdom kept selling oil before 2005, and became buyer after.
+
+```{r}
+impOIL.country<-impOIL %>% group_by(country_or_area,year) %>% summarise(totalImport=sum(quantity)) 
+expOIL.country<-expOIL %>% group_by(country_or_area,year) %>% summarise(totalExport=sum(quantity)) 
+netOIL<-merge(impOIL.country,expOIL.country, c("country_or_area","year"))
+netOIL<-mutate(netOIL,netTransation=totalExport - totalImport)
+
+ggplot(data=netOIL, aes(x=year, y=netTransation, group = country_or_area, colour = country_or_area)) +
+    geom_line() +
+    geom_point( size=1, shape=10, fill="white")+
+    ggtitle("Total Oil net trade (Export-Import), Metric tons, thousand")+
+    scale_y_continuous(labels = comma)
+```
+
+
+###3.Nautal Gas
+
+**Total Nautal Gas Net Trade:**
+
+United States is the biggest buyer from 1992-2013 with max import over 4,000,000 Terajoules in 2007 then reduced to 1,200,000 in 2014 ranking at fourth. Germany is the second largest buyer in most of time, yet its constantly import brought to the first place in 2014. Right after Germany, Italy had smooth grew before 2008 and surpassed united states in 2010. France had pretty steady grew and ranked at fourth before 2013. China showed very strong grew after 2008 which ranked at third in 2014. Similar to China, United Kingdom had enlarged their import from 2005. Japan did not have data in natural gas net trade. Canada is not only the biggest supplier, also the only country export Natural gas.
+
+```{r}
+impNG.country<-impNG %>% group_by(country_or_area,year) %>% summarise(totalImport=sum(quantity)) 
+expNG.country<-expNG %>% group_by(country_or_area,year) %>% summarise(totalExport=sum(quantity)) 
+netNG<-merge(impNG.country,expNG.country, c("country_or_area","year"))
+netNG<-mutate(netNG,netTransation=totalExport - totalImport)
+
+ggplot(data=netNG, aes(x=year, y=netTransation, group = country_or_area, colour = country_or_area)) +
+    geom_line() +
+    geom_point( size=1, shape=10, fill="white")+
+    ggtitle("Total Natural Gas net trade (Export-Import), Terajoules")+
+    scale_y_continuous(labels = comma)
+```
+
+
+###4. Biofuels & Waste 
+
+**Total Biofuels & Waste Net Trade: **
+
+There are three forms import sources in this fields, United Kingdom took a lot import started from 2009 from 15,000 Terajoules. It grew with almost vertical speed, imported 70,000 Terajoules in 2014. Italy started to import biofuels and waste energy from 1998, and went up to 8,000 thousand cubic meters in 2014. Japan was out of this business. Others also had import or export, but the quantity of the trades are too small to be concerned.
+
+```{r}
+impBW.country<-impBW %>% group_by(unit,country_or_area,year) %>% summarise(totalImport=sum(quantity)) 
+expBW.country<-expBW %>% group_by(unit,country_or_area,year) %>% summarise(totalExport=sum(quantity)) 
+netBW<-merge(impBW.country,expBW.country, c("country_or_area","year","unit"))
+netBW<-mutate(netBW,netTransation=totalExport - totalImport)
+
+ggplot(data=netBW, aes(x=year, y=netTransation, group = country_or_area, colour = country_or_area)) +
+    geom_line() +
+    geom_point( size=1, shape=10, fill="white")+
+    ggtitle("Total Biofuels & Waste net trade (Export-Import)")+
+    facet_grid(. ~ unit) +theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+    scale_y_continuous(labels = comma)
+
+
+```
+
+##Part III: Electricity Consumption by hourseholds: 
+
+
+###1. 2014 vs 2004 total electricity consumption for households
+
+For 2014 the total electricity consumption for households' data set, United States ranked at the first place with 1,416,977 million Kilowatt-hours and 10% grow in 10 years. United States almost double the total amount of the second country China, which had 717, 610 consumptions million Kilowatt-hours and two-time growth in past 10 years. The following is Japan which had 273,938 million Kilowatt-hours and constant consumption in 10 years. India ranked at fourth with 217,405 million Kilowatt-hours and 1.27 times growth in past 10 years. Canada is at fifth with 161,568 million Kilowatt-hours and 7% growth. France is at sixth with 149,426 million Kilowatt-hours and 4% growth. Brazil is at seventh with 132,302 million Kilowatt-hours and 68% the third fastest growth in past 10 years. The next three countries ranking in order are Germany, United Kingdom and Italy, with 129,600, 108,881 and 64,255 separately. These three countries reduced the total electricity consumption for households in past 10 years, with 8%, 12% and 4% dropped in usage.
+
+```{r}
+electricity2004<-subEnergy %>% filter(year=="2004") %>% filter(category=="total_electricity") 
+electricity2004<-electricity2004[grepl("households",electricity2004[,2])==TRUE,]
+electricity2004<-electricity2004[order(electricity2004$quantity,decreasing = TRUE),]
+electricity2004<-electricity2004[order(electricity2004$quantity,decreasing = TRUE),]
+
+electricity2014<-subEnergy %>% filter(year=="2014") %>% filter(category=="total_electricity") 
+electricity2014<-electricity2014[grepl("households",electricity2014[,2])==TRUE,]
+electricity2014<-electricity2014[order(electricity2014$quantity,decreasing = TRUE),]
+electricity2014<-electricity2014[order(electricity2014$quantity,decreasing = TRUE),]
+
+e<-merge(electricity2014,electricity2004, c("country_or_area"))
+e<-data.frame(e$country_or_area,e$quantity.x,e$quantity.y,e$unit.x,e$transaction.x)
+colnames(e)<- c("country_or_area","2014_quantity","2004_quantity","unit","transation")
+
+#add new column "growth rate"
+e["2004-2014growth"] <-round((e$`2014_quantity`-e$`2004_quantity`)/e$`2004_quantity`,2)
+
+e<-e[order(e$`2014_quantity`,decreasing = TRUE),]
+
+e
+```
+
+
+```{r}
+ggplot(data=e, aes(x=reorder(country_or_area, -`2004-2014growth`), y=`2004-2014growth`,fill=country_or_area)) +
+  geom_bar(stat="identity")+
+  geom_text(aes(label=`2004-2014growth`), vjust=-1, color="black", size=3)+  
+  ggtitle("Electricity Consumption by hourseholds 2004-2014 growth rate") +
+  xlab("country_or_area)") + ylab("2004-2014growth")
+```
+
+
+###2. Electricity Consumption by hourseholds per capital
+
+For the graph of Per_Capital_Use(Kilowatt-hours), Canada and United States are at first and second places with very close amount of usage per capital. Their usage are close double amount of France and Japan usage per capital. China and India are at ninth and tenth, only 11.7% and 3.7% of the usage per capital in Canada.
+
+```{r}
+url<-("https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_population")
+temp <- url %>% 
+  html %>%
+  html_nodes("table")
+population<-html_table(temp[1])
+
+#formate 'population' table in r
+population<-data.frame(population)
+
+#rename 'Country (or dependent territory)' column as 'Country' 
+colnames(population)[2] <- "Country"
+
+#remove [note] from country names in 'Country' column
+population$Country <-gsub("\\[.*","",population$Country)
+
+#remove "," from 'Population' column string, then covert char to interger data type
+population$Population<-gsub("[^0-9]", "", population$Population) 
+population$Population<-as.integer(as.character(population$Population))
+
+population10<- population[population$Country %in% c("United States","China","Japan","Germany","United Kingdom","India","France","Brazil","Italy","Canada"), ]
+
+population10<-data.frame(population10$Country,population10$Population)
+#rename all column names  
+colnames(population10) <- c("country_or_area","Population")
+
+p<-merge(electricity2014,population10, c("country_or_area"))
+
+#add new column "Per_Capital_Use"
+p["Per_Capital_KW_hr"] <-round(p$quantity/p$Population*1000000,2)
+
+p<-p[order(p$quantity,decreasing = TRUE),]
+
+ggplot(data=p, aes(x=reorder(country_or_area, Per_Capital_KW_hr), y=Per_Capital_KW_hr,fill=country_or_area)) +
+  geom_bar(stat="identity")+
+  geom_text(aes(label=Per_Capital_KW_hr), vjust=-1, color="black", size=3)+  
+  ggtitle("Electricity Consumption by hourseholds per capital") +
+  xlab("Per_Capital_Use(Kilowatt-hours)") + ylab("country")+
+  coord_flip()
+```
+
+
+## Export/Import Trade & Consumption Conclusion
+
+###1. Export & Import Trade Conclusion
+
+In North America, US and Canada are the world largest energy consumers and suppliers in different products in most of the time of past 10 years. US and Canada both exported a lot of coal_peat_oil.shale. For oil and natural gas, Canada and United States were the best partner, which were the largest seller and buyer respectively in most time.
+
+
+In Asian continents, China, Japan and India had dramatically enlarged the import of unreplacble energy source coal_peat_oil.shale and oil products in post 10 years, in which China and India largely contributed in the growth. Japan always kept the constant grew speed in energy trade. China also showed aggressively import more natural gas from 2008, yet Japan and India were not in natural gas trade. And Asian countries were not that much involved in trading renewable energy Biofuels and Waste. 
+
+
+UE had opposite reaction from Asia in energy trade. For unrenewable energy products, France, Germany, Italy and UK had kept the stable low quantity during the period. They started to import more renewable energy product biofuels and waste product in the past, thought the quantity was incomparable small to the unrenewable energy. United Kingdom showed very aggressive grew in renewable energy product starting from 2009. Italy also had slow grown as well. 
+
+
+Among top 10 countries, Brazil had very low active in energy trade. The quantities of coal_peat_oil.shale. , oil and biofuels and waste product had insignificant small. 
+
+
+
+###2. Electricity Consumption by households Conclusion
+
+From the grow rate in last decade, China and India were not surprise in ranking first and second growth in Electricity Consumption, and this reflected to their large import of coal, oil and gas.  However, Brazil was surprise ranked at third without much trade in energy products. United States, Canada and France showed small grew in electricity Consumption. And Japan and Italy, and Germany seemed to control and reduced electricity consumption. 
+
+
+From the households per capital consumption, Canada and United States were the highest amounts. Brazil, China and India were at the bottom with around 17% of Canada and United States per capital, because of the large population share in domestics. 
+
+
+
+
+## References
+
+[^1]: https://www.kaggle.com/unitednations/international-energy-statistics/data 
+[^2]: https://www.investopedia.com/articles/investing/022415/worlds-top-10-economies.asp
+[^3]: http://api.eia.gov/series/?api_key=YOUR_API_KEY_HERE&series_id=ELEC.GEN.ALL-US-98.A
+
