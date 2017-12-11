@@ -339,7 +339,7 @@ We will exclude the kaggle total from further analysis, and replace it by adding
 ```{r api_start, eval=TRUE, include=FALSE}
 suppressMessages(suppressWarnings(library('httr')))
 suppressMessages(suppressWarnings(library('jsonlite')))
-USA <-"http://api.eia.gov/series/?api_key=864713a8817430093cd98489f419ce1a&series_id=ELEC.GEN.ALL-US-98.A"
+USA <-"http://api.eia.gov/series/?api_key=******************************a&series_id=ELEC.GEN.ALL-US-98.A"
 ```
 
 The EIA has electrical production for the whole USA from 2001 to 2016. The units are in thousands of megawatt*hours.
