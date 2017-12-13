@@ -1,0 +1,1189 @@
+---
+title: "Cooper DATA 606 Final Project"
+author: "Nathan Cooper"
+date: "November 30, 2017"
+output:
+  html_document:
+    code_folding: hide
+    toc: yes
+    toc_float: yes
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, eval=TRUE, include=FALSE}
+suppressMessages(suppressWarnings(library('tidyr')))
+suppressMessages(suppressWarnings(library('dplyr')))
+suppressMessages(suppressWarnings(library('psych')))
+suppressMessages(suppressWarnings(library('stringr')))
+suppressMessages(suppressWarnings(library('ggplot2')))
+suppressMessages(suppressWarnings(library('MASS')))
+```
+
+## Introduction
+
+College costs are rising. Anecdotally, I saw my own tuition at Purdue more than double in the 12 years that I attended (\$3724/yr in 1999 to \$9070/yr in 2010[^2]. However, anecdotes are the beginning of a scientific investigation. Tuition for a public 4 year school has increased at a rate averaging between 3.2% to 4.4% since 1987[^3]. The rate of inflation during this time has been between 3.2%[^4]. Coming from a working class back ground,  I found the cost of universities to be prohibitive without a scholarship, which motivated me to join the US Navy. However, military service should not be the only route for affordable education. Until public policy changes in such a way that makes higher education more affordable to more people, prospective students may have to make hard choices about how much debt they take on, and how quickly they can pay down that debt. Employment rates and salary statistics are important for cost-conscience students to choose a path that not encumber a student with unmanageable debt. To address these concerns I ask:
+
+Which college majors offer the best opportunities in terms of unemployment rate and salary?
+
+## The Data
+
+These Data were collated by the 538 website and was posted to their github page[^1]. They in turn used data from:
+
+ "All data is from American Community Survey 2010-2012 Public Use Microdata Series.
+Download data here: http://www.census.gov/programs-surveys/acs/data/pums.html
+Documentation here: http://www.census.gov/programs-surveys/acs/technical-documentation/pums.html
+Major categories are from Carnevale et al, "What's It Worth?: The Economic Value of College Majors." Georgetown University Center on Education and the Workforce, 2011.[^5]"
+Details for the Georgetown data set can be found here: https://1gyhoq479ufd3yna29x7ubjn-wpengine.netdna-ssl.com/wp-content/uploads/2015/01/WIW1-Methodology.pdf
+
+From the above methodology report:
+
+> Unique  Data Characteristics
+1)For the first time in this survey the Census Bureau asked individuals who 
+indicated that their degree was a bachelor’s degree or higher,
+to supply their undergraduate major. Their responses were then coded and collapsedby the 
+Census Bureau into 171 different degree  majors.  
+2) Unlike other data sources focused on recent degree recipients, the Census data 
+enable analysis across an individual’s full life cycle. 
+3) The Census data also result in
+robust estimates  due to the very large sample involved.
+531,337 persons surveyed who are representative of
+51,547,518 people  having Bachelor’s degrees
+(including those with graduate degrees),
+when weighted.
+
+
+Since these data were collected by survey and lacks experimental features like a control group and blinding, this study is an observational study. We therefore cannot establish a causal link between variables. However the sample size is small enough compared to the population where cases are independent, and the data were collected at random. We can make inferences and predictions using these data. 
+
+In establishing the scope of inference we must bare in mind that the data were collected on college degree holders within the US. We can only make predictions on degree holders within the US. Predictions made here are not valid for degree holders in other countries, even if they obtained their degree in the US. Social and economic conditions in other countries that would invalidate any predictions made.
+
+### Cases
+
+In many observational surveys the cases are individual people. That is not true for this study. Although the data was collected by asking individuals what their major, degree level, pay, and employment status was. The data is organized in such a way that the cases are the college majors. In the "All_ages" set," each case represents majors offered by colleges and universities in the US. These data include both undergrads and grad students. In the "Grad_students" set, each case represents majors offered by colleges and universities in the US. These data include only grad students aged 25+ years. Finally, in the "Recent_grad" set, each case represents majors offered by colleges and universities in the US. These data include only undergraduate students aged <28 years. "Recent_grad" also includes gender statistics. In all sets, the same 173 majors are used.
+
+```{r data_prep, eval=TRUE, include=FALSE}
+
+# I pull the data directly from the website and organize it by Major
+#category for easier subsetting
+url1 <- "https://raw.githubusercontent.com/fivethirtyeight/data/master/college-majors/all-ages.csv"
+all_ages <- url1 %>% read.csv(stringsAsFactors = FALSE) %>% tbl_df() %>% arrange(Major_category)
+
+#Below I subset all the data by Major Category I only print 1 table
+#to make a cleaner presentation.
+all_ages_ag <- all_ages %>% filter(Major_category == "Agriculture & Natural Resources")
+head(all_ages_ag)
+
+all_ages_art <- all_ages %>% filter(Major_category == "Arts")
+
+all_ages_bio <- all_ages %>% filter(Major_category == "Biology & Life Science")
+
+all_ages_bsn <- all_ages %>% filter(Major_category == "Business")
+
+all_ages_cj <- all_ages %>% filter(Major_category == "Communications & Journalism")
+
+
+all_ages_com <- all_ages %>% filter(Major_category == "Computers & Mathematics")
+
+all_ages_ed <- all_ages %>% filter(Major_category == "Education")
+
+
+all_ages_eng <- all_ages %>% filter(Major_category == "Engineering")
+
+all_ages_hlt <- all_ages %>% filter(Major_category == "Health")
+
+all_ages_la <- all_ages %>% filter(Major_category == "Humanities & Liberal Arts" | Major_category == "Interdisciplinary")
+
+all_ages_ia <- all_ages %>% filter(Major_category == "Industrial Arts & Consumer Services")
+
+all_ages_law <- all_ages %>% filter(Major_category == "Law & Public Policy")
+
+all_ages_sci <- all_ages %>% filter(Major_category == "Physical Sciences")
+
+all_ages_psy <- all_ages %>% filter(Major_category == "Psychology & Social Work")
+
+all_ages_ssc <- all_ages %>% filter(Major_category == "Social Science")
+
+# I repeat the process for graduate students, again only printing
+#1 table
+url2 <- "https://raw.githubusercontent.com/fivethirtyeight/data/master/college-majors/grad-students.csv"
+grad_stdnt <- url2 %>% read.csv(stringsAsFactors = FALSE) %>% tbl_df() %>% arrange(Major_category)
+
+#Subsets
+grad_ag <- grad_stdnt %>% filter(Major_category == "Agriculture & Natural Resources")
+head(grad_ag)
+
+grad_art <- grad_stdnt %>% filter(Major_category == "Arts")
+
+grad_bio <- grad_stdnt %>% filter(Major_category == "Biology & Life Science")
+
+grad_bsn <- grad_stdnt %>% filter(Major_category == "Business")
+
+grad_cj <- grad_stdnt %>% filter(Major_category == "Communications & Journalism")
+
+grad_com <- grad_stdnt %>% filter(Major_category == "Computers & Mathematics")
+
+grad_ed <- grad_stdnt %>% filter(Major_category == "Education")
+
+grad_eng <- grad_stdnt %>% filter(Major_category == "Engineering")
+
+grad_hlt <- grad_stdnt %>% filter(Major_category == "Health")
+
+grad_la <- grad_stdnt %>% filter(Major_category == "Humanities & Liberal Arts" | Major_category == "Interdisciplinary")
+
+grad_ia <- grad_stdnt %>% filter(Major_category == "Industrial Arts & Consumer Services")
+
+grad_law <- grad_stdnt %>% filter(Major_category == "Law & Public Policy")
+
+grad_sci <- grad_stdnt %>% filter(Major_category == "Physical Sciences")
+
+grad_psy <- grad_stdnt %>% filter(Major_category == "Psychology & Social Work")
+
+grad_ssc <- grad_stdnt %>% filter(Major_category == "Social Science")
+
+
+
+#Repeat for only undergraduates 
+url3 <- "https://raw.githubusercontent.com/fivethirtyeight/data/master/college-majors/recent-grads.csv"
+rct_grad <- url3 %>% read.csv(stringsAsFactors = FALSE) %>% tbl_df() %>% arrange(Major_category)
+
+rct_ag <- rct_grad %>% filter(Major_category == "Agriculture & Natural Resources")
+head(rct_ag)
+
+rct_art <- rct_grad %>% filter(Major_category == "Arts")
+
+rct_bio <- rct_grad %>% filter(Major_category == "Biology & Life Science")
+
+rct_bsn <- rct_grad %>% filter(Major_category == "Business")
+
+rct_cj <- rct_grad %>% filter(Major_category == "Communications & Journalism")
+
+rct_com <- rct_grad %>% filter(Major_category == "Computers & Mathematics")
+
+rct_ed <- rct_grad %>% filter(Major_category == "Education")
+
+rct_eng <- rct_grad %>% filter(Major_category == "Engineering")
+
+rct_hlt <- rct_grad %>% filter(Major_category == "Health")
+
+rct_la <- rct_grad %>% filter(Major_category == "Humanities & Liberal Arts" | Major_category == "Interdisciplinary")
+
+rct_ia <- rct_grad %>% filter(Major_category == "Industrial Arts & Consumer Services")
+
+rct_law <- rct_grad %>% filter(Major_category == "Law & Public Policy")
+
+rct_sci <- rct_grad %>% filter(Major_category == "Physical Sciences")
+
+rct_psy <- rct_grad %>% filter(Major_category == "Psychology & Social Work")
+
+rct_ssc <- rct_grad %>% filter(Major_category == "Social Science")
+```
+
+In asking what the economic outlook is for the college majors, the response variable are the college majors and are categorical. Results will take the form of ordered lists. These lists will be created using the explanatory variables such as the counts of employed and unemployed college degree holders and the statistics of their income. These data are numerical. We will also see what effect gender has on income and employment rate and that data is categorical.
+
+## Exploring the data.
+
+The Appendix contains tables and graphs of median salary data and unemployment rate for each of the 173 majors at the three attainment categories, recent graduate, graduate degree and all ages. These data were relegated to an Appendix to make them available for the interested reader, but not in such a way that interrupts the flow of this paper, since these tables and graphs take up nearly 70 pages. 
+
+In this chapter, we will compare unemployment rate and median salary data based solely on attainment level.
+
+First we will look at overall unemployment rate for the 3 categories: all ages, recent grads, and grad students.
+```{r sum_stats, eval=TRUE}
+summary(all_ages$Unemployment_rate)
+summary(rct_grad$Unemployment_rate)
+summary(grad_stdnt$Grad_unemployment_rate)
+unempl <- cbind(all_ages$Unemployment_rate, rct_grad$Unemployment_rate, grad_stdnt$Grad_unemployment_rate)
+boxplot(unempl,names = c("All", "Recent Grad", "Grad Student"), ylab = "Unemployment Rate")
+```
+
+It appears that people holding only a Bachelor's degree have nearly twice as high median unemployment as those with higher degrees. This suggests that having a graduate degree improves a person's chance at finding a job.
+
+We will also look at median income for the three categories.
+
+```{r med_inc, eval=TRUE}
+summary(all_ages$Median)
+hist(all_ages$Median, main = "Histogram for Median Income All Ages", xlab = "Median Income by Major All Ages (USD)", col = "dark blue")
+summary(rct_grad$Median)
+hist(rct_grad$Median, main = "Histogram for Median Income Recent Grads", xlab = "Median Income by Major Recent Grads (USD)", col = "dark blue")
+summary(grad_stdnt$Grad_median)
+hist(grad_stdnt$Grad_median, main = "Histogram for Median Income Grad Students", xlab = "Median Income by Major Grad Student (USD)", col = "dark blue")
+medsal <- cbind(all_ages$Median, rct_grad$Median, grad_stdnt$Grad_median)
+boxplot(medsal, names = c("All", "Recent Grad", "Grad Student"), ylab = "Median Salary USD")
+```
+  
+We see from these graphs that the median salary of the graduate students is considered a high outlier for the recent graduate set, and the medial salary for the recent graduate data set is a low outlier for the graduate student set. This suggests that getting a graduate degree greatly improves earning potential. 
+
+The tables and bar plots in the appendix also show that majors that emphasize so-called "hard" skills, such as the Science Technology Engineering and Math (STEM) majors tend to out perform majors that emphasize the so-called "soft" skills, such as Fine Arts, Liberal Arts, and Social Sciences.
+
+                                              
+## Chi Squared Tests for Independance for Employment Status
+
+It is not enough to simply look at graphs and draw conclusions as to whether our hypothesis is correct. Further statistical tests need to be preformed to test if what the graphs tell us is actually significant. To that end, we perform $\chi^2$ tests for independence, as this test is used to check for significance of a categorical variable like employed vs. unemployed[^6]. Our null hypothesis is that major choice is independent of employment status. The alternative hypothesis is that employment status depends on major choice.
+
+First for all ages:
+```{r chi_sq_aa, eval=TRUE}
+all_age_contin <- all_ages %>% dplyr::select(Major, Employed, Unemployed) # For user-freindliness we'll pull major, number employed, number unemployed. 
+head(all_age_contin)
+#barplot(as.matrix(all_age_contin), beside = TRUE)
+chisq.test(all_age_contin[,-1]) #We remove the major names for the chi-squared test
+```
+
+Since the p-value is less than 0.05, we can reject the null hypothesis that the choice of major does not affects employment status, and we accept the alternative hypothesis that choice of major does affect employment status in the all ages category.
+
+Next, we will test for grad students:
+```{r chi_sq_gr, eval=TRUE}
+head(grad_stdnt)
+grd_st_contin <- grad_stdnt %>% dplyr::select(Major, Grad_employed, Grad_unemployed)# For user-freindliness we'll pull major, number employed, number unemployed. 
+head(grd_st_contin)
+#barplot(as.matrix(all_age_contin), beside = TRUE)
+chisq.test(grd_st_contin[,-1]) #We remove the major names for the chi-squared test
+```
+
+Again, p<0.05,  we reject the null hypothesis and accept the alternative hypothesis that major choice at the grad level affects employment status.
+
+Now for recent bachelor's degree grads:
+```{r chi_sq_rg, eval=TRUE}
+head(rct_grad)
+rct_gr_contin <- rct_grad %>% dplyr::select(Major,Employed,Unemployed) %>% filter(Major != "MILITARY TECHNOLOGIES" ) # For user-freindliness we'll pull major, number employed, number unemployed.   One Major, military technology had 0 in both employed and unemployed columns, was excluded.
+rct_gr_contin
+#barplot(as.matrix(all_age_contin), beside = TRUE)
+chisq.test(rct_gr_contin[,-1]) #We remove the major names for the chi-squared test
+```
+
+As with the other two cases,we reject the null and accept the alternative that choice of major affects unemployment rate. Thus, regardless of degree level your choice of major will affect your unemployment rate. Generally speaking you'll have better chances of finding a job in certain majors as compared to other majors.
+
+We can also compare grad vs. under grad:
+
+```{r chi_sq_gr_ug, eval=TRUE}
+#This will give proportions for making the bar plot.
+a <- sum(grd_st_contin[,2])/(sum(grd_st_contin[,2])+sum(grd_st_contin[,3]))
+b <- sum(grd_st_contin[,3])/(sum(grd_st_contin[,2])+sum(grd_st_contin[,3]))
+c <- sum(rct_gr_contin[,2])/(sum(rct_gr_contin[,2])+sum(rct_gr_contin[,3]))
+d <- sum(rct_gr_contin[,3])/(sum(rct_gr_contin[,2])+sum(rct_gr_contin[,3]))
+#Now to make a matrix to plot
+gr_ug_contin_prop <- matrix(c(a, c,b,d),byrow = TRUE, nrow = 2)
+barplot(gr_ug_contin_prop,beside = TRUE, names.arg = c("Grad Students", "Undergrads"), ylab = "%",main = "Employment/Unemployment")
+#For Ch-sq we will use absolute count instead of proportion.
+e <- sum(grd_st_contin[,2])
+f <- sum(grd_st_contin[,3])
+g <- sum(rct_gr_contin[,2])
+h <- sum(rct_gr_contin[,3])
+gr_ug_contin <- matrix(c(e, f,g,h),byrow = TRUE, nrow = 2)
+gr_ug_contin
+chisq.test(gr_ug_contin)
+```
+
+For level of attainment, we reject the null hypothesis that degree level does not affect employment status and accept the alternative hypothesis that degree attainment bachelor's to graduate degree does affect unemployment rate. 
+
+### Summary of $\chi^2$ Tests.
+
+Choice of major and level of degree attainment affects unemployment rate at all age levels.
+
+## Student's T and Kolmogorov-Smirnov Tests - Median Salary
+
+As we stated in the Data section, exploration of the median salary data in the appendix shows that quantitative analysis majors, the STEM majors, appear to have more earning potential than qualitative analysis majors, such as Liberal Arts. Since median salary is a numerical measurement, it is appropriate to use a Student's t-test[^7] or a Kolmogorov-Smirnov[^8] test to compare similarity between data sets. The Student's t-test is a parametric test that compare's against the t distribution.  The Kolmogorov-Smirnov is a non-parametric test, in that it does not assume the survey data is drawn from a population with a given distribution, instead it measures likelihood of similarity by comparing the biggest difference in to data set's continuous probability distribution. Since the salary data has a right-skew across all attainment levels, adding a non-parametric test will increase the robustness of this analysis.
+
+To make these comparisons, we must bare in mind that we have (14 major categories x 3 attainment levels) 42 categories that have to be combined in groups of 2 for a total of $C(42,2) = \frac{42!}{(2! *40!)} = 861$ combinations. This is prohibitively long given the time constraints for this project. Therefore, We will analyze 4 major categories from the all ages set to bring us to $C(4,2) = \frac{4!}{2!*2!} = 6$ combinations. These major categories are, Engineering, Physical Sciences, Liberal Arts, and Psychology \& Social Work. We selected these categories based on observation of the median salary tables in the Appendix.
+
+### Engineering vs Physical Sciences
+
+The Null hypothesis is that there is no difference between median salaries of Engineering majors and Physical Science Majors. Initial two-sided tests, that only check that the distributions are different, and not that one is greater or less than the other, showed significance in all cases. We show below the results of single sided tests to definitely say that median salary of one degree category is greater than the other.
+
+```{r eng_ps, eval=TRUE}
+boxplot(all_ages_eng$Median, all_ages_sci$Median, names = c("Engineering", "Physical Sciences"), ylab = "Median Salary USD")
+t.test(all_ages_eng$Median, all_ages_sci$Median, alternative = "greater")
+ks.test(all_ages_eng$Median, all_ages_sci$Median, alternative = "less") #KS test has opposite sign convention than t test
+```
+
+The median salary of Engineering majors is higher than that of Physical Science majors at the 95% confidence level.
+
+### Liberal Arts vs. Psycology and Social Work.
+
+The Null Hypothesis and Alternative are similar to above,  albeit with Liberal Arts and Psycology and Social as major categories.
+
+```{r la_psy, eval=TRUE}
+boxplot(all_ages_la$Median, all_ages_psy$Median, names = c("Liberal Arts", "Psycology & Social Work"), ylab = "Median Salary USD")
+t.test(all_ages_la$Median, all_ages_psy$Median, alternative = "two.sided")
+ks.test(all_ages_la$Median, all_ages_psy$Median, alternative = "two.sided") #KS test has opposite sign convention than t test
+```
+
+As is, there is no statistical significant difference between Liberal Arts and Psycology \& Social Work in either test. However, the Industrial and Organizational Psycology major is an outlier. Below we removed the outlier major and performed the analysis again.
+
+```{r la_psy2, eval=TRUE}
+psy_no_outl <- all_ages_psy %>% dplyr::select(Median) %>% filter(Median != max(Median)) #this removed the high outlier.
+boxplot(all_ages_la$Median, psy_no_outl$Median, names = c("Liberal Arts", "Psycology & Social Work"), ylab = "Median Salary USD")
+t.test(all_ages_la$Median, psy_no_outl$Median, alternative = "greater")
+ks.test(all_ages_la$Median, psy_no_outl$Median, alternative = "less") #KS test has opposite sign convention than t test
+shapiro.test(all_ages_la$Median) #Signifcance in KS test disagreed with the T-test. A Normality test is performed as a tie breaker.
+shapiro.test(psy_no_outl$Median) #Note that the T-test assumes a t-distribution which becomes a Normal distribution at high 'n'
+```
+
+Upon removing the outlier from the Psycology and Social Work set, we get a significant difference of p = 0.01653, but a non-significant difference of p = 0.2231. However the Shapiro-Wilk test for normality fails to reject the null hypothesis of that test, that the data comes from a Normally distributed population. Since the Student's T-test tends to the Normal distribution for high N, we can trust the result of the student t-test.
+
+The median salary of Liberal Arts majors is greater than Psycology and Social Work majors at the 95% confidence level, once the outlying major in Psycology and Social Work is removed.
+
+### Engineering vs Liberal Arts
+
+This time we repeat the same Null and Alternative hypotheses with Engineering and Liberal Arts.
+
+```{r eng_la, eval=TRUE}
+boxplot(all_ages_eng$Median, all_ages_la$Median, names = c("Engineering", "Liberal Arts"), ylab = "Median Salary USD")
+t.test(all_ages_eng$Median, all_ages_la$Median, alternative = "greater")
+ks.test(all_ages_eng$Median, all_ages_la$Median, alternative = "less") #KS test has opposite sign convention than t test
+```
+
+The median salary of Engineering majors is higher than that of Liberal Arts majors at the 95% confidence level.
+
+### Engineering vs Psycology \& Social Work
+
+```{r eng_psy, eval=TRUE}
+boxplot(all_ages_eng$Median, all_ages_psy$Median, names = c("Engineering", "Psycology & Social Work"), ylab = "Median Salary USD")
+t.test(all_ages_eng$Median, all_ages_psy$Median, alternative = "greater")
+ks.test(all_ages_eng$Median, all_ages_psy$Median, alternative = "less") #KS test has opposite sign convention than t test
+```
+
+### Liberal Arts vs Physical Sciences
+
+This time we repeat the same Null and Alternative hypotheses with Liberal Arts and Physical Sciences.
+
+```{r la_ps, eval=TRUE}
+boxplot(all_ages_la$Median, all_ages_sci$Median, names = c("Liberal Arts", "Physical Sciences"), ylab = "Median Salary USD")
+t.test(all_ages_la$Median, all_ages_sci$Median, alternative = "less")
+ks.test(all_ages_la$Median, all_ages_sci$Median, alternative = "greater") #KS test has opposite sign convention than t test
+```
+
+Physical Science median salary is higher than Liberal Arts median salary at the 95% confidence level.
+
+### Psycology \& Social Work vs Physical Sciences
+
+This time we repeat the same Null and Alternative hypotheses with Psycology \& Social Work majors and Physical Sciences majors.
+
+```{r psy_la, eval=TRUE}
+boxplot(all_ages_psy$Median, all_ages_sci$Median, names = c("Psycology & Social Work", "Physical Sciences"), ylab = "Median Salary USD")
+t.test(all_ages_psy$Median, all_ages_sci$Median, alternative = "less")
+ks.test(all_ages_psy$Median, all_ages_sci$Median, alternative = "greater") #KS test has opposite sign convention than t test
+```
+
+Median salary of Physical Science majors is higher than Psycology \& Social Work majors at the 95% confidence level. N.B., that the Industrial and Organizational Psychology Major, which is a high outlier in the Psycology \& Social Work category is near the median salary of the Physical Sciences category.
+
+### Summary of T-tests an KS tests
+
+In terms of median pay the ranking is as follows:
+
+1) Engineering
+2) Physical Science
+3) Liberal Arts
+4) Psycology and Social Work
+
+Additionally, the Industrial and Organizational Psycology Major is similar in pay to Physical Sciences.
+
+
+## Linear Model - Unemployment rate vs median salary
+
+Job market pressure can have an impact on both median salary and unemployment rate. If a field has low demand but high supply this can depress the salary and increase the unemployment rate. Conversely, a high demand/low supply field will see increased salaries and decreased unemployment rates. Another effect to consider is that people in over-subscribed field may spend a greater time looking for a job, which would also decrease median salary as they may be unemployed or underemployed during the job hunt. This effect could show in the data as a correlation between unemployment rate and salary.
+
+To test if there is a connection between unemployment rate and median salary,  we will take the "all_ages" data set and create linear regression models. If the residuals of the model do not show the necessary behavior of Normal Distribution and Constant Variance, we will perform a Box-Cox transformation on the data to get an exponential factor to improve the model.
+
+```{r un_v_sal, eval=TRUE}
+fit1<-lm(all_ages$Median ~ all_ages$Unemployment_rate)
+summary(fit1)
+ggplot(all_ages, aes(x = Unemployment_rate, y = Median)) +
+  geom_point(color = 'blue')+
+  geom_smooth(method = "lm", formula = y~x)
+hist(resid(fit1))
+plot(fitted(fit1), resid(fit1))
+myt <- boxcox(fit1)
+myt_df <- as.data.frame(myt)
+optimal_lambda = myt_df[which.max(myt$y),1] #syntax from https://rpubs.com/FelipeRego/SimpleLinearRegression
+optimal_lambda
+fit2 <- lm(all_ages$Median^optimal_lambda ~ all_ages$Unemployment_rate)
+summary(fit2)
+hist(resid(fit2))
+plot(fitted(fit2), resid(fit2))
+qqnorm(resid(fit2))
+qqline(resid(fit2))
+all_ages <- all_ages %>% mutate(transMedian  = Median^optimal_lambda)
+head(all_ages)
+ggplot(all_ages, aes(x = Unemployment_rate, y = transMedian)) +
+  geom_point(color = 'blueviolet')+
+  geom_smooth(method = "lm", formula = y~x)
+#The correlation seems to be due to outliers
+all_ages_no_outlr <- all_ages %>% filter(Unemployment_rate != max(Unemployment_rate) & Unemployment_rate != 0)
+fit3 <- lm(all_ages_no_outlr$transMedian ~ all_ages_no_outlr$Unemployment_rate)
+summary(fit3)
+hist(resid(fit3))
+plot(fitted(fit3), resid(fit3))
+qqnorm(resid(fit3))
+qqline(resid(fit3))
+ggplot(all_ages_no_outlr, aes(x = Unemployment_rate, y = transMedian)) +
+  geom_point(color = 'firebrick')+
+  geom_smooth(method = "lm", formula = y~x)
+# We can also see what Majors have the most and least unemployment
+mjr_umploy <- all_ages  %>% dplyr::select(Major,Unemployment_rate) %>% arrange(Unemployment_rate)
+head(mjr_umploy, 10)
+tail(mjr_umploy, 10)
+mjr_salary <- all_ages  %>% dplyr::select(Major,Median) %>% arrange(Median)
+head(mjr_salary, 10)
+tail(mjr_salary, 10)
+```
+
+Initially the data had marginal behavior regarding the residuals. The Box cox transformation did make the residuals Normal and Homoskedacstic. In that regard the transformed model is fit to make predictions. Both the initial slope of the linear regression model  of -231551 and the Box Cox exponent of -1.07 shows that unemployment rate and median salary are inversely related. That is low unemployment rates tend to have higher median salaries and high unemployment rates tend to lower salaries. This relationship is statistically significant, with a p-value of  0.0001225, even after influencing outliers were removed. However, the effect is weak with an R$^2$ of 0.08432 after outleirs are removed. This means that only about 8.432% of the variability of median salary can be explained by unemployment rate.
+
+
+We suggest to students who are researching the prospects of college majors is to treat underemployment rates and salary statistics separately. Do not just go off of advise like, "You'll make a mint in this field" or "They're hiring a lot of people in that field". It does no good if a student accrues \$100,000 in debt to be virtually guaranteed a job where they can't pay the debt off, or they could pay it off if they get a job in that field, but the chances of that are small. 
+
+## Linear Model- Gender Wage Gap
+
+The wage gap that exists between men and women in the labor force is well documented[^9]. Millenials have also been noted for redefining gender roles[^10]. The recent grads data set includes data on the number of males and females earning degrees in each major. Millenials are defined as those between the ages of 14-34 as of the time of this writing, and are represented in the recent graduates data set. It may be of interest to prospective college students to choose majors with high gender inequity to correct those inequities through positive action. We will preform analysis of the data to that end so perspective students can make an informed discussion. 
+
+For defining male or female majority majors, we must account for the fact that 57% of college students are female[^11]. Therefore a gender balanced major would be 57% female, 43% male, which would represent the underlying student population. We will use $\pm 10\%$: 67% female / 47% female as the threshold for gender imbalance.
+
+We begin by identifying top gender-unequal majors and with t-tests and KS-tests to verify the gender gap in pay.
+
+```{r gend1, eval=TRUE}
+gend_rct_grad <- rct_grad %>% dplyr::select(Major, ShareWomen, Median) %>% filter(Major != "FOOD SCIENCE")%>%arrange(ShareWomen)
+head(gend_rct_grad, 10)
+tail(gend_rct_grad, 10)
+male_major_salary <- rct_grad %>% dplyr::select(Major, ShareWomen, Median) %>% filter(ShareWomen <= 0.47)
+female_major_salary <- rct_grad %>% dplyr::select(Major, ShareWomen, Median) %>% filter(ShareWomen >= 0.67)
+boxplot(male_major_salary$Median, female_major_salary$Median, names = c("Majority Male","Majority Female"), ylab = "Median Salary USD")
+t.test(male_major_salary$Median, female_major_salary$Median, alternative = "greater")
+ks.test(male_major_salary$Median, female_major_salary$Median, alternative = "less") #Sign Convention Different
+eng_sci <- bind_rows(rct_eng, rct_sci)
+la_ssc <- bind_rows(rct_la, rct_ssc)
+boxplot(eng_sci$ShareWomen, la_ssc$ShareWomen, names = c("STEM", "L.A. & Social Work"), ylab = "% Women")
+t.test(eng_sci$ShareWomen, la_ssc$ShareWomen, alternative = "less")
+ks.test(eng_sci$ShareWomen, la_ssc$ShareWomen, alternative = "greater")
+```
+
+Male Majority salary is higher than female majority salary at the 95% confidence interval. Engineer and Physical Sciences have fewer women by percent than Liberal Arts, Psychology \& Social Work at the 95% confidence level. We will now make a linear regression model to understand this phenomena further. 
+
+```{r gend2, eval=TRUE}
+fit4 <- lm(rct_grad$Median ~ rct_grad$ShareWomen)
+summary(fit4)
+hist(resid(fit4))
+plot(resid(fit4)~fitted(fit4))
+qqnorm(resid(fit4))
+qqline(resid(fit4))
+#An outlier is effecting our linear regression. Box Cox will be used to correct.
+myt2 <- boxcox(fit4)
+myt2_df <- as.data.frame(myt2)
+optimal_lambda2 = myt2_df[which.max(myt2$y),1] #syntax from https://rpubs.com/FelipeRego/SimpleLinearRegression
+optimal_lambda2
+fit5 <- lm(rct_grad$Median^optimal_lambda2 ~ rct_grad$ShareWomen)
+summary(fit5)
+hist(resid(fit5))
+plot(resid(fit5)~fitted(fit5))
+qqnorm(resid(fit5))
+qqline(resid(fit5))
+rct_grad_gend <- rct_grad %>% mutate(transMedian  = Median^optimal_lambda2) %>% filter(Major != "FOOD SCIENCE")
+ggplot(rct_grad_gend, aes(x = ShareWomen, y = transMedian)) +
+  geom_point(color = 'firebrick')+
+  geom_smooth(method = "lm", formula = y~x)
+```
+
+Note that the power will transformed the median salary, -0.9494949, means that the positive slope in the graph actually shows an inverse relationship between the percent of women in a major and the median salary. The p-value of the slope is much less than 0.05, Gender effects median salary at the 95% confidence level. Furthermore the R$^2$ value of 0.431 is high for a social science study. The residuals are also Normally distributed and have constant variance, so this linear regression is predictive for recent college graduates in the US.  
+
+## Under-employment
+
+Unemployment rate gives an incomplete picture of the prospects for a given Major. Student may also be concerned with not being stuck in a low paying job[^12]. 
+Recent college grads being stuck in low paying retail and food industry jobs has been greatly documented in recent years. There is some debate over whether this phenomena should really be of long-term concern, or if it is just a result of the Great Recession or just part of personal growth[^13][^14][^15]. Regardless we highlight majors with high levels of low paying jobs, or people working in jobs that do not require a degree. 
+
+```{r under_empl, eval=TRUE}
+#low-wage jobs, we look at the % compared to total employment.
+rct_grad_underemp <- rct_grad %>% mutate(Under_emp_rate = Low_wage_jobs/Total) %>% dplyr::select(Major, Under_emp_rate) %>% arrange(Under_emp_rate) %>% filter(Major != "FOOD SCIENCE") #Food science returns NA
+hist(rct_grad_underemp$Under_emp_rate,  main =  "Histogram of Recent Graduate Low Wage Job Rate", 
+     xlab = "Low Wage Job Rate")
+head(rct_grad_underemp, 10)
+tail(rct_grad_underemp, 10)
+#Jobs that dont require a degree, also comapared to 
+rct_grad_nodgr <- rct_grad %>% mutate(No_degree_rate = Non_college_jobs/Total) %>% dplyr::select(Major, No_degree_rate) %>% arrange(No_degree_rate) %>% filter(Major != "FOOD SCIENCE") #Food science returns NA
+hist(rct_grad_nodgr$No_degree_rate,  main =  "Histogram of Recent Graduates % in Non-degree Jobs", 
+     xlab = "Non-degree Job Rate")
+head(rct_grad_nodgr, 10)
+tail(rct_grad_nodgr, 10)
+```
+
+For perspective students looking at majors that have high levels of employment in jobs that do not require a degree, alternatives like vocational certificates or apprenticeships may be a more economically viable alternative than a college degree.
+
+## Conclusions 
+
+We find that choice in college major has a significant effect on median salary and unemployment rate. This effect is seen at all age levels. Higher salaries and lower unemployment tend to favor STEM majors. Gender balance of majors also plays a significant effect on median salary. These findings that STEM and Gender affect median salary seem to be interrelated as the STEM majors tend to be male majority. There is a statistically, but not necessarily practically, significance between unemployment rate and median pay.
+
+### Future Work
+
+These data are only represent a single point in time. Measuring trends is important for perspective college student, as they need to be able to predict what the job market is going to look like when they graduate. These trends may also influence choices in graduate study. Therefore it is necessary to repeat these surveys at regular intervals, and add time series analysis to the above analysis.
+
+In the graduate student data, no differentiation is made between masters, doctorates or professional degrees. Adding a column to future surveys will be useful as more detailed analysis can be made in terms of how level of attainment will affect earnings an unemployment rates.
+
+## References
+
+[^1]:https://github.com/fivethirtyeight/data
+[^2]:https://www.chronicle.com/interactives/tuition-and-fees
+[^3]:https://trends.collegeboard.org/college-pricing/figures-tables/average-rates-growth-published-charges-decade
+[^4]:https://inflationdata.com/Inflation/Inflation_Rate/Long_Term_Inflation.asp
+[^5]:http://cew.georgetown.edu/whatsitworth
+[^6]: https://onlinecourses.science.psu.edu/stat500/node/56
+[^7]: https://en.wikipedia.org/wiki/Student%27s_t-test
+[^8]: https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test
+[^9]: http://onlinelibrary.wiley.com/doi/10.1111/j.0950-0804.2005.00256.x/full
+[^10]: http://www.theatlantic.com/sponsored/prudential-sleeping-giants/millennials-and-gender-a-major-attitude-shift/467/
+[^11]: https://www.washingtonpost.com/local/education/the-gender-factor-in-college-admissions/2014/03/26/4996e988-b4e6-11e3-8020-b2d790b3c9e1_story.html?utm_term=.969f2cc21c83
+[^12]:https://www.forbes.com/sites/prestoncooper2/2017/07/13/new-york-fed-highlights-underemployment-among-college-graduates/#325a1adc40d8
+[^13]:https://www.theatlantic.com/business/archive/2016/09/fear-of-a-college-educated-barista/500792/
+[^14]:http://www.foxbusiness.com/features/2016/01/11/myth-college-grad-barista.html
+[^15]:https://www.forbes.com/sites/jeffreydorfman/2017/01/23/dispelling-the-myth-of-underemployed-college-graduates/#3044cccb502c
+
+
+## Appendix
+
+As it is of interest to this paper will will list graphics of median salary by attainment (i.e., All, Recent Grad and Grad Student) and category (e.g., Humanities, Engineering). 
+
+### Median Salary
+
+#### All Ages
+
+##### Agriculture
+
+```{r eval=TRUE}
+barplot(all_ages_ag$Median, names.arg = all_ages_ag$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_ag %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Arts
+
+```{r eval=TRUE}
+barplot(all_ages_art$Median, names.arg = all_ages_art$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_art %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Biological Sciences
+
+```{r eval=TRUE}
+barplot(all_ages_bio$Median, names.arg = all_ages_bio$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_bio %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Business
+
+```{r eval=TRUE}
+barplot(all_ages_bsn$Median, names.arg = all_ages_bsn$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_bsn %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Communications \& Jounralism
+
+```{r eval=TRUE}
+barplot(all_ages_cj$Median, names.arg = all_ages_cj$Major, horiz = TRUE, cex.names = 0.4, las =1)
+all_ages_cj %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Computer Science \& Mathematics
+
+```{r eval=TRUE}
+barplot(all_ages_com$Median, names.arg = all_ages_com$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_com %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Education
+
+```{r eval=TRUE}
+barplot(all_ages_ed$Median, names.arg = all_ages_ed$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_ed %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Engineering
+
+```{r eval=TRUE}
+barplot(all_ages_eng$Median, names.arg = all_ages_eng$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_eng %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Health 
+
+```{r eval=TRUE}
+barplot(all_ages_hlt$Median, names.arg = all_ages_hlt$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_hlt %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Industrial Arts and Consumer Services
+
+```{r eval=TRUE}
+barplot(all_ages_ia$Median, names.arg = all_ages_ia$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_ia %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Liberal Arts
+
+```{r eval=TRUE}
+barplot(all_ages_la$Median, names.arg = all_ages_la$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_la %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Law
+
+```{r eval=TRUE}
+barplot(all_ages_law$Median, names.arg = all_ages_law$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_law %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Psycology \& Social Work
+
+```{r eval=TRUE}
+barplot(all_ages_psy$Median, names.arg = all_ages_psy$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_psy %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Sciences
+
+```{r eval=TRUE}
+barplot(all_ages_sci$Median, names.arg = all_ages_sci$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_sci %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Social Sciences
+
+```{r eval=TRUE}
+barplot(all_ages_ssc$Median, names.arg = all_ages_ssc$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_ssc %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+#### Recent Graduates
+
+##### Agriculture
+
+```{r eval=TRUE}
+barplot(rct_ag$Median, names.arg = rct_ag$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_ag %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Arts
+
+```{r eval=TRUE}
+barplot(rct_art$Median, names.arg = rct_art$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_art %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Biological Sciences
+
+```{r eval=TRUE}
+barplot(rct_bio$Median, names.arg = rct_bio$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_bio %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Business
+
+```{r eval=TRUE}
+barplot(rct_bsn$Median, names.arg = rct_bsn$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_bsn %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Communications \& Jounralism
+
+```{r eval=TRUE}
+barplot(rct_cj$Median, names.arg = rct_cj$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_cj %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Computer Science \& Mathematics
+
+```{r eval=TRUE}
+barplot(rct_com$Median, names.arg = rct_com$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_com %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Education
+
+```{r eval=TRUE}
+barplot(rct_ed$Median, names.arg = rct_ed$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_ed %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Engineering
+
+```{r eval=TRUE}
+barplot(rct_eng$Median, names.arg = rct_eng$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_eng %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Health 
+
+```{r eval=TRUE}
+barplot(rct_hlt$Median, names.arg = rct_hlt$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_hlt %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Industrial Arts and Consumer Services
+
+```{r eval=TRUE}
+barplot(rct_ia$Median, names.arg = rct_ia$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_ia %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Liberal Arts
+
+```{r eval=TRUE}
+barplot(rct_la$Median, names.arg = rct_la$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_la %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Law
+
+```{r eval=TRUE}
+barplot(rct_law$Median, names.arg = rct_law$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_law %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Psycology \& Social Work
+
+```{r eval=TRUE}
+barplot(rct_psy$Median, names.arg = rct_psy$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_psy %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Sciences
+
+```{r eval=TRUE}
+barplot(rct_sci$Median, names.arg = rct_sci$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_sci %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+##### Social Sciences
+
+```{r eval=TRUE}
+barplot(rct_ssc$Median, names.arg = rct_ssc$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_ssc %>% dplyr::select(Major, Median) %>% arrange(Median)
+```
+
+#### Graduate Students
+
+##### Agriculture
+
+```{r eval=TRUE}
+barplot(grad_ag$Grad_median, names.arg = grad_ag$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_ag %>% dplyr::select(Major, Grad_median) %>% arrange(Grad_median)
+```
+
+##### Arts
+
+```{r eval=TRUE}
+barplot(grad_art$Grad_median, names.arg = grad_art$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_art %>% dplyr::select(Major, Grad_median) %>% arrange(Grad_median)
+```
+
+##### Biological Sciences
+
+```{r eval=TRUE}
+barplot(grad_bio$Grad_median, names.arg = grad_bio$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_bio %>% dplyr::select(Major, Grad_median) %>% arrange(Grad_median)
+```
+
+##### Business
+
+```{r eval=TRUE}
+barplot(grad_bsn$Grad_median, names.arg = grad_bsn$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_bsn %>% dplyr::select(Major, Grad_median) %>% arrange(Grad_median)
+```
+
+##### Communications \& Jounralism
+
+```{r eval=TRUE}
+barplot(grad_cj$Grad_median, names.arg = grad_cj$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_cj %>% dplyr::select(Major, Grad_median) %>% arrange(Grad_median)
+```
+
+##### Computer Science \& Mathematics
+
+```{r eval=TRUE}
+barplot(grad_com$Grad_median, names.arg = grad_com$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_com %>% dplyr::select(Major, Grad_median) %>% arrange(Grad_median)
+```
+
+##### Education
+
+```{r eval=TRUE}
+barplot(grad_ed$Grad_median, names.arg = grad_ed$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_ed %>% dplyr::select(Major, Grad_median) %>% arrange(Grad_median)
+```
+
+##### Engineering
+
+```{r eval=TRUE}
+barplot(grad_eng$Grad_median, names.arg = grad_eng$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_eng %>% dplyr::select(Major, Grad_median) %>% arrange(Grad_median)
+```
+
+##### Health 
+
+```{r eval=TRUE}
+barplot(grad_hlt$Grad_median, names.arg = grad_hlt$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_hlt %>% dplyr::select(Major, Grad_median) %>% arrange(Grad_median)
+```
+
+##### Industrial Arts and Consumer Services
+
+```{r eval=TRUE}
+barplot(grad_ia$Grad_median, names.arg = grad_ia$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_ia %>% dplyr::select(Major, Grad_median) %>% arrange(Grad_median)
+```
+
+##### Liberal Arts
+
+```{r eval=TRUE}
+barplot(grad_la$Grad_median, names.arg = grad_la$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_la %>% dplyr::select(Major, Grad_median) %>% arrange(Grad_median)
+```
+
+##### Law
+
+```{r eval=TRUE}
+barplot(grad_law$Grad_median, names.arg = grad_law$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_law %>% dplyr::select(Major, Grad_median) %>% arrange(Grad_median)
+```
+
+##### Psycology \& Social Work
+
+```{r eval=TRUE}
+barplot(grad_psy$Grad_median, names.arg = grad_psy$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_psy %>% dplyr::select(Major, Grad_median) %>% arrange(Grad_median)
+```
+
+##### Sciences
+
+```{r eval=TRUE}
+barplot(grad_sci$Grad_median, names.arg = grad_sci$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_sci %>% dplyr::select(Major, Grad_median) %>% arrange(Grad_median)
+```
+
+##### Social Sciences
+
+```{r eval=TRUE}
+barplot(grad_ssc$Grad_median, names.arg = grad_ssc$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_ssc %>% dplyr::select(Major, Grad_median) %>% arrange(Grad_median)
+```
+
+### Unemployment Rate
+
+#### All
+
+##### Agriculture
+
+```{r eval=TRUE}
+barplot(all_ages_ag$Unemployment_rate, names.arg = all_ages_ag$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_ag %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Arts
+
+```{r eval=TRUE}
+barplot(all_ages_art$Unemployment_rate, names.arg = all_ages_art$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_art %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Biological Sciences
+
+```{r eval=TRUE}
+barplot(all_ages_bio$Unemployment_rate, names.arg = all_ages_bio$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_bio %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Business
+
+```{r eval=TRUE}
+barplot(all_ages_bsn$Unemployment_rate, names.arg = all_ages_bsn$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_bsn %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Communications \& Jounralism
+
+```{r eval=TRUE}
+barplot(all_ages_cj$Unemployment_rate, names.arg = all_ages_cj$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_cj %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Computer Science \& Mathematics
+
+```{r eval=TRUE}
+barplot(all_ages_com$Unemployment_rate, names.arg = all_ages_com$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_com  %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Education
+
+```{r eval=TRUE}
+barplot(all_ages_ed$Unemployment_rate, names.arg = all_ages_ed$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_ed %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Engineering
+
+```{r eval=TRUE}
+barplot(all_ages_eng$Unemployment_rate, names.arg = all_ages_eng$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_eng %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Health 
+
+```{r eval=TRUE}
+barplot(all_ages_hlt$Unemployment_rate, names.arg = all_ages_hlt$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_hlt %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Industrial Arts and Consumer Services
+
+```{r eval=TRUE}
+barplot(all_ages_ia$Unemployment_rate, names.arg = all_ages_ia$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_ia %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Liberal Arts
+
+```{r eval=TRUE}
+barplot(all_ages_la$Unemployment_rate, names.arg = all_ages_la$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_la %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Law
+
+```{r eval=TRUE}
+barplot(all_ages_law$Unemployment_rate, names.arg = all_ages_law$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_law %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Psycology \& Social Work
+
+```{r eval=TRUE}
+barplot(all_ages_psy$Unemployment_rate, names.arg = all_ages_psy$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_psy %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Sciences
+
+```{r eval=TRUE}
+barplot(all_ages_sci$Unemployment_rate, names.arg = all_ages_sci$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_sci %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Social Sciences
+
+```{r eval=TRUE}
+barplot(all_ages_ssc$Unemployment_rate, names.arg = all_ages_ssc$Major, horiz = TRUE, cex.names = 0.3, las =1)
+all_ages_ssc %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+#### Recent Graduates
+
+##### Agriculture
+
+```{r eval=TRUE}
+barplot(rct_ag$Unemployment_rate, names.arg = rct_ag$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_ag %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Arts
+
+```{r eval=TRUE}
+barplot(rct_art$Unemployment_rate, names.arg = rct_art$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_art %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Biological Sciences
+
+```{r eval=TRUE}
+barplot(rct_bio$Unemployment_rate, names.arg = rct_bio$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_bio %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Business
+
+```{r eval=TRUE}
+barplot(rct_bsn$Unemployment_rate, names.arg = rct_bsn$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_bsn %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Communications \& Jounralism
+
+```{r eval=TRUE}
+barplot(rct_cj$Unemployment_rate, names.arg = rct_cj$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_cj %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Computer Science \& Mathematics
+
+```{r eval=TRUE}
+barplot(rct_com$Unemployment_rate, names.arg = rct_com$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_com %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Education
+
+```{r eval=TRUE}
+barplot(rct_ed$Unemployment_rate, names.arg = rct_ed$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_ed %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Engineering
+
+```{r eval=TRUE}
+barplot(rct_eng$Unemployment_rate, names.arg = rct_eng$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_eng %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Health
+
+```{r eval=TRUE}
+barplot(rct_hlt$Unemployment_rate, names.arg = rct_hlt$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_hlt %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Industrial Arts and Consumer Services
+
+```{r eval=TRUE}
+barplot(rct_ia$Unemployment_rate, names.arg = rct_ia$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_ia %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Liberal Arts
+
+```{r eval=TRUE}
+barplot(rct_la$Unemployment_rate, names.arg = rct_la$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_la %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Law
+
+```{r eval=TRUE}
+barplot(rct_law$Unemployment_rate, names.arg = rct_law$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_law %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Psycology \& Social Work
+
+```{r eval=TRUE}
+barplot(rct_psy$Unemployment_rate, names.arg = rct_psy$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_psy %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Sciences
+
+```{r eval=TRUE}
+barplot(rct_sci$Unemployment_rate, names.arg = rct_sci$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_sci %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+##### Social Sciences
+
+```{r eval=TRUE}
+barplot(rct_ssc$Unemployment_rate, names.arg = rct_ssc$Major, horiz = TRUE, cex.names = 0.3, las =1)
+rct_ssc %>% dplyr::select(Major, Unemployment_rate) %>% arrange(Unemployment_rate)
+```
+
+#### Graduate Students
+
+##### Agriculture
+
+```{r eval=TRUE}
+barplot(grad_ag$Grad_unemployment_rate, names.arg = grad_ag$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_ag %>% dplyr::select(Major, Grad_unemployment_rate) %>% arrange(Grad_unemployment_rate)
+```
+
+##### Arts
+
+```{r eval=TRUE}
+barplot(grad_art$Grad_unemployment_rate, names.arg = grad_art$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_art %>% dplyr::select(Major, Grad_unemployment_rate) %>% arrange(Grad_unemployment_rate)
+```
+
+##### Biological Sciences
+
+```{r eval=TRUE}
+barplot(grad_bio$Grad_unemployment_rate, names.arg = grad_bio$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_bio %>% dplyr::select(Major, Grad_unemployment_rate) %>% arrange(Grad_unemployment_rate)
+```
+
+##### Business
+
+```{r eval=TRUE}
+barplot(grad_bsn$Grad_unemployment_rate, names.arg = grad_bsn$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_bsn %>% dplyr::select(Major, Grad_unemployment_rate) %>% arrange(Grad_unemployment_rate)
+```
+
+##### Communications \& Jounralism
+
+```{r eval=TRUE}
+barplot(grad_cj$Grad_unemployment_rate, names.arg = grad_cj$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_cj %>% dplyr::select(Major, Grad_unemployment_rate) %>% arrange(Grad_unemployment_rate)
+```
+
+##### Computer Science \& Mathematics
+
+```{r eval=TRUE}
+barplot(grad_com$Grad_unemployment_rate, names.arg = grad_com$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_com %>% dplyr::select(Major, Grad_unemployment_rate) %>% arrange(Grad_unemployment_rate)
+```
+
+##### Education
+
+```{r eval=TRUE}
+barplot(grad_ed$Grad_unemployment_rate, names.arg = grad_ed$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_ed %>% dplyr::select(Major, Grad_unemployment_rate) %>% arrange(Grad_unemployment_rate)
+```
+
+##### Engineering
+
+```{r eval=TRUE}
+barplot(grad_eng$Grad_unemployment_rate, names.arg = grad_eng$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_eng %>% dplyr::select(Major, Grad_unemployment_rate) %>% arrange(Grad_unemployment_rate)
+```
+
+##### Health 
+
+```{r eval=TRUE}
+barplot(grad_hlt$Grad_unemployment_rate, names.arg = grad_hlt$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_hlt %>% dplyr::select(Major, Grad_unemployment_rate) %>% arrange(Grad_unemployment_rate)
+```
+
+##### Industrial Arts and Consumer Services
+
+```{r eval=TRUE}
+barplot(grad_ia$Grad_unemployment_rate, names.arg = grad_ia$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_ia %>% dplyr::select(Major, Grad_unemployment_rate) %>% arrange(Grad_unemployment_rate)
+```
+
+##### Liberal Arts
+
+```{r eval=TRUE}
+barplot(grad_la$Grad_unemployment_rate, names.arg = grad_la$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_la %>% dplyr::select(Major, Grad_unemployment_rate) %>% arrange(Grad_unemployment_rate)
+```
+
+##### Law
+
+```{r eval=TRUE}
+barplot(grad_law$Grad_unemployment_rate, names.arg = grad_law$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_law %>% dplyr::select(Major, Grad_unemployment_rate) %>% arrange(Grad_unemployment_rate)
+```
+
+##### Psycology \& Social Work
+
+```{r eval=TRUE}
+barplot(grad_psy$Grad_unemployment_rate, names.arg = grad_psy$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_psy %>% dplyr::select(Major, Grad_unemployment_rate) %>% arrange(Grad_unemployment_rate)
+```
+
+##### Sciences
+
+```{r eval=TRUE}
+barplot(grad_sci$Grad_unemployment_rate, names.arg = grad_sci$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_sci %>% dplyr::select(Major, Grad_unemployment_rate) %>% arrange(Grad_unemployment_rate)
+```
+
+##### Social Sciences
+
+```{r eval=TRUE}
+barplot(grad_ssc$Grad_unemployment_rate, names.arg = grad_ssc$Major, horiz = TRUE, cex.names = 0.3, las =1)
+grad_ssc %>% dplyr::select(Major, Grad_unemployment_rate) %>% arrange(Grad_unemployment_rate)
+```
