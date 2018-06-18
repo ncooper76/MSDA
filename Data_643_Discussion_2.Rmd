@@ -1,0 +1,16 @@
+---
+title: "Research Discussion Assignment 2"
+author: "Nathan Cooper"
+date: "June 18, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Thoughts on: Music Recommendations at Scale with Spark - Christopher Johnson (Spotify)
+
+I have been waiting to take a closer look into Big Data solutions since the start of this program. It seems that Big Data is going to be an indispensable skill going forward. I have done a lot of reading in [Hadoop](http://hadoop.apache.org/) vs [Spark](https://spark.apache.org) and I was always left with a few questions as to their fundamental differences which can often be unclear due to jargon, and the author's assumption that you already know the difference, but the author feels obligated to share it. My basic understanding was that they are both Apache products that allow you to build networks of legacy computer (older machines) that are specifically designed to calculate large amounts of data. Both products do this by distributing the data across Nodes in the network (individual computers) with redundant copies of the data in case a Node fails. It seems the part that I was missing is that [Spark holds the data in memory](https://youtu.be/3LBgiFch4_g?t=679) while Hadoop writes the data to disk. It should also be noted that [Hadoop](https://www.datamation.com/data-center/hadoop-vs.-spark-the-new-age-of-big-data.html) is a complete 'ecosystem' of software packages that covers file systems (HDFS), resource management (YARN), and a framework (MapReduce) that schedules and (re)executes tasks. On that note, Spark is a framework more similar to MapReduce than the whole Hadoop package. Spark can run on HDFS, but it does not have to. 
+
+I have played around with both systems in the cloud, [Datacamp](datacamp.com) and [IBM](https://cognitiveclass.ai), and I look forward to work with both in a more substantial way, hopefully soon. 
