@@ -1,0 +1,25 @@
+---
+title: "The Man Fired By Machine"
+author: "Nathan Cooper"
+date: "June 25, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## The Background
+
+Recently BBC posted an article about a man, Ibrahim Diallo, who was 8 months into a 3 year employment contract when he was [fired](https://www.bbc.com/news/technology-44561838). Essential his boss was laid off in the middle of a technology reorganization, and neglected to input his employees contract in the new system. Then,  Mr. Diallo, was flagged as fired. What makes this so shocking is that, when the problem was diagnosed, no one seemed to have the power to reverse the decision.
+
+
+## The Problem
+
+This was a clerical error, but Human Resources functions are being increasingly sourced to [machines](https://www.techemergence.com/machine-learning-in-human-resources/), as the video for class points out this includes [flagging resumes](https://youtube.com/watch?v=MqoRzNhrTnQ). It seems like it is just on the horizon (if it isn't already implemented, and I am unaware) that machine learning algorithms will take over analyzing employee performance reviews, and recommending actions based on those reviews. 
+
+So what happens when an algorithm flags an employee for termination? 
+
+Speaking from exprience, firing a person is an unpleasant process (at least if you care about the wellfare of your employees), I've known managers who have looked for any means to delegate or avoid a face-to-face meeting when firing someone, and is how I ended up firing someone. It seems that letting a machine do it would be ideal for this hypothetical person that wants to avoid the responsibilty.
+
+But we know that machine learning algorithms don't always get it right, and that is when they are running perfectly. What happens when there is bug?
